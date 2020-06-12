@@ -2,13 +2,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { createStore } from 'redux';
-import './App.css';
-import './index.css';
+import './App.scss';
+import './index.scss';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import baseReducer from './reducers';
 
-const store = createStore(baseReducer);
+const store = createStore(baseReducer, { pages: [{ name: 'Page 1' }, { name: 'Page 2' }]});
 
 window.store = store;
 

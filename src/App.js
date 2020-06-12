@@ -1,14 +1,16 @@
 import React from 'react';
-import './App.css';
+import Sidebar from 'sections/Sidebar';
+import RollerBar from 'sections/RollerBar';
+import './App.scss';
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <input type="file" onChange={
-          (e) => console.log(e.target.files)
-        }/>
-      </header>
+      <Sidebar />
+      <div className="main" style={{ width: '100%', position: 'relative' }}>
+        <div>here is content</div>
+        <RollerBar />
+      </div>
     </div>
   );
 }

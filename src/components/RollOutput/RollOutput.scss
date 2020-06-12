@@ -1,0 +1,28 @@
+.roll-output {
+  margin-left: 30px;
+  display: flex;
+  align-items: center;
+  flex:2;
+  flex-flow: wrap;
+
+  .die {
+    background-color: gray;
+    margin: 0px 5px;
+    border-radius: 5px;
+    display: inline-block;
+    min-width: 40px;
+    min-height: 40px;
+    text-align: center;
+
+    &.disabled {
+      opacity: 0.5;
+    }
+
+    .die-inner {
+      display: flex;
+      height: 40px;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+}
