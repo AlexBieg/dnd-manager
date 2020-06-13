@@ -118,7 +118,7 @@ const Page = ({ pageId }) => {
                       {...provided.dragHandleProps}
                       className="content-row"
                     >
-                      <Icon icon="grip-lines" />
+                      <Icon className="grip" icon="grip-lines" />
                       <Popover
                         isOpen={menuOpen.includes(i)}
                         position={'bottom'}
