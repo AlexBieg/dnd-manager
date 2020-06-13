@@ -8,7 +8,7 @@ import App from './App';
 import * as serviceWorker from './serviceWorker';
 import baseReducer from './reducers';
 
-const store = createStore(baseReducer, { pages: [{ name: 'Page 1' }, { name: 'Page 2' }]});
+const store = createStore(baseReducer);
 
 window.store = store;
 

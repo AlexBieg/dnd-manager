@@ -7,4 +7,9 @@
   height: 40px;
   min-width: 40px;
   margin-left: 10px;
+
+  &:hover {
+    cursor: pointer;
+    background: #6080a2;
+  }
 }

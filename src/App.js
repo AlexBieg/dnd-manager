@@ -1,14 +1,15 @@
 import React from 'react';
 import Sidebar from 'sections/Sidebar';
 import RollerBar from 'sections/RollerBar';
+import Page from 'sections/Page';
 import './App.scss';
 
 function App() {
   return (
     <div className="App">
       <Sidebar />
-      <div className="main" style={{ width: '100%', position: 'relative' }}>
-        <div>here is content</div>
+      <div className="main">
+        <Page />
         <RollerBar />
       </div>
     </div>

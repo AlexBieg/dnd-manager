@@ -4,14 +4,43 @@
   background-color: #cecece;
   width: 50%;
   height: 100%;
-  padding: 30px;
-}
 
-.sidebar > .header {
-  font-weight: bold;
-  margin-bottom: 40px;
-}
+  .header {
+    font-weight: bold;
+    margin-bottom: 40px;
+  }
 
-.sidebar > .pages {
+  .pages-header {
+    font-weight: bold;
+  }
 
+  .pages {
+    .page-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+
+      &.active {
+        background: #bdbdbd;
+      }
+
+      &:hover {
+        background: #bdbdbd;
+        cursor: pointer;
+      }
+
+      .menu {
+        padding: 0px 5px;
+      }
+
+      .page-name {
+        width: 100%;
+      }
+    }
+  }
+
+  .add-page {
+    margin-top: 20px;
+  }
 }

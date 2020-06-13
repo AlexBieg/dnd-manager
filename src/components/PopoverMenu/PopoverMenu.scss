@@ -1,0 +1,19 @@
+.popover-menu {
+  background: white;
+  border-radius: 2px;
+  color: #5d5d5d;
+
+  .menu-item {
+    padding: 10px;
+
+    &:hover {
+      cursor: pointer;
+      background-color: darkgray;
+    }
+  }
+
+  .menu-icon {
+    width: 10px;
+    margin-right: 10px;
+  }
+}
