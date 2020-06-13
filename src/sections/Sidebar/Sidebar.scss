@@ -15,11 +15,16 @@
   }
 
   .pages {
+    .pages-list {
+      overflow-x: scroll;
+    }
     .page-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 10px 20px;
+      width: fit-content;
+      min-width: -webkit-fill-available;
 
       &.active {
         background: #bdbdbd;
@@ -30,6 +35,10 @@
         cursor: pointer;
       }
 
+      .dropdown-caret {
+        width: 20px;
+      }
+
       .menu {
         padding: 0px 5px;
       }
@@ -37,6 +46,7 @@
       .page-name {
         width: 100%;
         margin-left: 10px;
+        margin-right: 10px;
       }
     }
   }

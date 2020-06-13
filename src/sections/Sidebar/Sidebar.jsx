@@ -149,7 +149,7 @@ const Sidebar = () => {
                   key={key}
                   onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
                 >
-                  <Icon icon={collapsed[index] ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(index)} />
+                  <Icon className="dropdown-caret" icon={collapsed[index] ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(index)} />
                   <EditableText
                     className="page-name"
                     text={page.name}
