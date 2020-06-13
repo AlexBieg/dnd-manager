@@ -1,18 +1,34 @@
 const electron = require('electron');
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
-
 const path = require('path');
-const url = require('url');
+const fs = require('fs');
 const isDev = require('electron-is-dev');
 
 let mainWindow;
 
+const userDataFilePath = path.join((electron.app || electron.remote.app).getPath('userData'), 'user-data.json');
+
+
 function createWindow() {
-  mainWindow = new BrowserWindow({width: 900, height: 680 });
+  mainWindow = new BrowserWindow({
+    width: 900,
+    height: 680,
+    webPreferences: {
+      nodeIntegration: true,
+    }
+  });
   mainWindow.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, '../build/index.html')}`);
   mainWindow.on('closed', () => mainWindow = null);
   mainWindow.webContents.openDevTools();
+
+  electron.ipcMain.on('save-user-data', function(event, data) {
+    fs.writeFileSync(userDataFilePath, data, () => {});
+  });
+
+  electron.ipcMain.on('load-user-data', function(event, data) {
+    mainWindow.webContents.send('user-data', fs.readFileSync(userDataFilePath, {encoding:'utf8', flag:'r'}));
+  });
 }
 
 app.on('ready', createWindow);

@@ -58,9 +58,9 @@ const RollOutput = () => {
 
   const dComps = rolls.length > 0 && dice.reduce((acc, d, i) => {
     if (adDisAlt.length) {
-      acc.push(<Dice disabled number={adDisAlt[i]} />);
+      acc.push(<Dice key={i} disabled number={adDisAlt[i]} />);
     }
-    acc.push(<Dice number={d} />)
+    acc.push(<Dice key={i} number={d} />)
 
     return acc;
   }, [])
