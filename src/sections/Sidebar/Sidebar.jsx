@@ -2,23 +2,75 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
 import Popover from 'react-tiny-popover'
-import { getPages, getActivePageId, pagesSetActivePage, pagesAddPage, pagesDeletePage } from 'reducers/pages';
+import {
+  getPages,
+  getActivePageId,
+  pagesSetActivePage,
+  pagesAddPage,
+  pagesDeletePage,
+  pagesEditPage,
+} from 'reducers/pages';
 import Button from 'components/Button';
 import Icon from 'components/Icon';
 import PopoverMenu from 'components/PopoverMenu';
+import EditableText from 'components/EditableText';
 import './Sidebar.scss';
+
+const buildOrderAndLevels = (pages) => {
+  const seen = [];
+  const results = [];
+
+  Object.entries(pages).forEach(([key, page]) => {
+    if (seen.includes(key)) {
+      return;
+    }
+
+    let nextLevel = [];
+    let thisLevel = [key];
+    let level = 1;
+
+    while (thisLevel.length > 0) {
+      const pageId = thisLevel.pop();
+      seen.push(pageId);
+
+      results.push({
+        key: pageId,
+        page: pages[pageId],
+        level,
+      });
+
+      if ((pages[pageId].subpages || []).length) {
+        nextLevel.push(...(pages[pageId].subpages));
+      }
+
+      if (thisLevel.length === 0) {
+        thisLevel = nextLevel;
+        nextLevel = [];
+        level++;
+      }
+    }
+  });
+
+  return results;
+}
+
 
 const Sidebar = () => {
   const dispatch = useDispatch();
   const pages = useSelector(getPages);
+  const orderedPages = buildOrderAndLevels(pages);
+
   const activeId = useSelector(getActivePageId)
   const [openMenus, setOpenMenus] = useState(new Set());
+  const [editingNames, setEditingNames] = useState(new Set());
+  const [collapsed, setCollapsed] = useState(orderedPages.map(() => false));
 
-  const onAdd = (event) => {
-    dispatch(pagesAddPage());
+
+  const onAdd = (id) => (event) => {
+    dispatch(pagesAddPage(id));
   }
 
-  const onToggleMenu = (id) => (event) => {
+  const onToggleMenu = (id) => () => {
     if (openMenus.has(id)) {
       openMenus.delete(id);
     } else {
@@ -28,12 +80,53 @@ const Sidebar = () => {
     setOpenMenus(new Set(openMenus));
   }
 
+  const onStartEdit = (id) => () => {
+    editingNames.add(id);
+    setEditingNames(new Set(editingNames));
+  }
+
+  const onEndEdit = (id) => () => {
+    editingNames.delete(id);
+    setEditingNames(new Set(editingNames));
+  }
+
+  const onEditName = (id) => (event) => {
+    dispatch(pagesEditPage(id, {
+      ...pages[id],
+      name: event.target.value,
+    }))
+  }
+
+  const onToggleDropdown = (index) => (event) => {
+    const newCollapsed = [...collapsed];
+    newCollapsed[index] = !newCollapsed[index];
+    setCollapsed(newCollapsed);
+  }
+
   const getMenuOptions = (id) => {
     return [
-      { text: 'Edit', icon: 'edit', onClick: ((id) => () => console.log('editing', id))(id) },
+      { text: 'Edit', icon: 'edit', onClick: onStartEdit(id) },
       { text: 'Delete', icon: 'trash-alt', onClick: ((id) => () => dispatch(pagesDeletePage(id)))(id) }
     ];
   };
+
+  let visibleLevel = null;
+  const visiblePages = orderedPages.reduce((acc, p, i) => {
+    if (visibleLevel && p.level <= visibleLevel) {
+      visibleLevel = null;
+    }
+
+    if (visibleLevel && p.level > visibleLevel) {
+      return acc;
+    }
+
+    if (!visibleLevel && collapsed[i]) {
+      visibleLevel = p.level;
+    }
+
+    acc.push(p);
+    return acc;
+  }, []);
 
   return (
     <div className="sidebar">
@@ -42,29 +135,37 @@ const Sidebar = () => {
         <div className="pages-header">Your Pages</div>
         <div className="pages-list">
           {
-            Object.entries(pages).map(([key, p]) => (
-              <div
-                className={classNames('page-item', { active: key === activeId })}
-                key={key}
-                onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
-              >
-                <span className="page-name">
-                  {p.name}
-                </span>
-                <Popover
-                  isOpen={openMenus.has(key)}
-                  position={'bottom'} // preferred position
-                  content={<PopoverMenu options={getMenuOptions(key)} />}
-                  onClickOutside={onToggleMenu(key)}
+            visiblePages.map(({ key, page, level}, index) => {
+              return(
+                <div
+                  className={classNames('page-item', { active: key === activeId })}
+                  style={{paddingLeft: `${level * 20}px`}}
+                  key={key}
+                  onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
                 >
-                  <Icon className="menu" icon="ellipsis-v" onClick={onToggleMenu(key)}/>
-                </Popover>
-              </div>
-            ))
+                  <Icon icon={collapsed[index] ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(index)} />
+                  <EditableText
+                    className="page-name"
+                    text={page.name}
+                    onUnfocus={onEndEdit(key)}
+                    onChange={onEditName(key)}
+                    isEditable={editingNames.has(key) || page.name.length === 0} />
+                  <Icon icon="plus" onClick={onAdd(key)} />
+                  <Popover
+                    isOpen={openMenus.has(key)}
+                    position={'bottom'} // preferred position
+                    content={<PopoverMenu options={getMenuOptions(key)} />}
+                    onClickOutside={onToggleMenu(key)}
+                  >
+                    <Icon className="menu" icon="ellipsis-v" onClick={onToggleMenu(key)}/>
+                  </Popover>
+                </div>
+              );
+            })
           }
         </div>
       </div>
-      <Button className="add-page" value="Add New Page" onClick={onAdd} />
+      <Button className="add-page" value="Add New Page" onClick={onAdd()} />
     </div>
   );
 };
