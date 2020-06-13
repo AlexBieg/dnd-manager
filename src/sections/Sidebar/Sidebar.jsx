@@ -125,8 +125,14 @@ const Sidebar = () => {
     }
 
     acc.push(p);
+
+    if (!p.page.name && !editingNames.has(p.key)) {
+      onStartEdit(p.key)();
+    }
     return acc;
   }, []);
+
+
 
   return (
     <div className="sidebar">
@@ -149,7 +155,7 @@ const Sidebar = () => {
                     text={page.name}
                     onUnfocus={onEndEdit(key)}
                     onChange={onEditName(key)}
-                    isEditable={editingNames.has(key) || page.name.length === 0} />
+                    isEditable={editingNames.has(key)} />
                   <Icon icon="plus" onClick={onAdd(key)} />
                   <Popover
                     isOpen={openMenus.has(key)}
