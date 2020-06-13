@@ -58,18 +58,19 @@ export const pagesEditPage = (id, data) => {
   }
 }
 
+const INTIAL_PAGE = {
+  name: '',
+  content: [],
+  subpages: [],
+}
+
 // Initial State
 const INITIAL_STATE = {
-  activePageId: '1',
-  pages: {
-    1: { name: 'test1', subpages: ['3'] },
-    2: { name: 'test2' },
-    3: { name: 'test3', subpages: ['4'] },
-    4: { name: 'test4'}
-  }
+  activePageId: null,
+  pages: {}
 }
 // Reducer
-const rolls = (state=INITIAL_STATE, { type, data}) => {
+const pages = (state=INITIAL_STATE, { type, data}) => {
   let newState;
   switch (type) {
     case PAGES_SET_ACTIVE_PAGE:
@@ -83,7 +84,7 @@ const rolls = (state=INITIAL_STATE, { type, data}) => {
         ...state,
         pages: {
           ...state.pages,
-          [newId]: { name: '' },
+          [newId]: { ...INTIAL_PAGE },
         },
       };
 
@@ -122,4 +123,4 @@ const rolls = (state=INITIAL_STATE, { type, data}) => {
   }
 };
 
-export default rolls;
+export default pages;
