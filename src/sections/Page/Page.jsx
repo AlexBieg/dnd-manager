@@ -12,7 +12,7 @@ import './Page.scss';
 const Page = ({ pageId }) => {
   const page = useSelector(getPages)[pageId];
   const dispatch = useDispatch();
-  const [activeRow, setActiveRow] = useState(null);
+  const [focusRow, setFocusRow] = useState(null);
   const [menuOpen, setMenuOpen] = useState([]);
 
   const onChangeContent = (index) => (event) => {
@@ -33,31 +33,39 @@ const Page = ({ pageId }) => {
   }
 
   const onFocus = (index) => (event) => {
-    setActiveRow(index);
+    setFocusRow(null);
   }
 
-  const onBlur = (index) => (event) => {
-    if (activeRow === index) {
-      setActiveRow(null);
-    }
-  }
-
-  const onKeyDown = (index) => (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+  const onKeyDown = (index) => (event, isEmpty) => {
+    if (event.key === 'Enter' && event.shiftKey) {
       const newContent = [...page.content];
       newContent.splice(index + 1, 0, '');
       dispatch(pagesEditPage(pageId, {
         ...page,
         content: newContent,
-      }))
+      }));
+      setFocusRow(index + 1);
+    }
+
+    if (event.key === 'Backspace' && isEmpty) {
+      onDeleteContent(index);
+      setFocusRow(index - 1);
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
   const onAddContent = () => {
-    dispatch(pagesEditPage(pageId, {
-      ...page,
-      content: [...page.content, ''],
-    }));
+    console.log(page);
+    if (page.content.length === 0 || page.content[page.content.length - 1].length > 0) {
+      setFocusRow(page.content.length);
+      dispatch(pagesEditPage(pageId, {
+        ...page,
+        content: [...page.content, ''],
+      }));
+    } else {
+      setFocusRow(page.content.length - 1);
+    }
   }
 
   const onDeleteContent = (index) => {
@@ -130,12 +138,11 @@ const Page = ({ pageId }) => {
                       <MultiMediaInput
                         onChange={onChangeContent(i)}
                         onFocus={onFocus(i)}
-                        onBlur={onBlur(i)}
                         onKeyDown={onKeyDown(i)}
                         className="media-input"
-                      >
-                        {c}
-                      </MultiMediaInput>
+                        value={c}
+                        focus={i === focusRow}
+                      />
                     </div>
                   )}
                 </Draggable>

@@ -1,11 +1,12 @@
 .page {
   display: flex;
   flex-direction: column;
+  overflow: auto;
 
   .page-header {
     font-weight: bold;
     font-size: 30px;
-    padding: 20px;
+    padding: 30px 70px;
   }
 
   .page-content {
@@ -22,27 +23,33 @@
   }
 
   .content-row {
-    padding: 0px 60px 0px 20px;
+    padding: 10px 60px 0px 20px;
     display: flex;
-    align-items: baseline;
+    align-items: center;
 
     &:hover {
       .menu, .grip {
         opacity: 1;
       }
+
+      .media-input {
+        border-left: #cecece 1px solid;
+      }
     }
 
-    .grip {
+    .grip, .menu {
       opacity: 0;
+      color: #cecece;
     }
 
     .menu {
       padding: 0px 10px;
-      opacity: 0;
     }
 
     .media-input {
       flex: 1;
+        border-left: rgba($color: #000000, $alpha: 0) 1px solid;
+      padding: 10px;
     }
   }
 }

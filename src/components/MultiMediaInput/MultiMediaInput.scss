@@ -3,4 +3,56 @@
   border: none;
   resize: none;
   font-family: inherit;
+  outline: none;
+
+  h1 {
+    font-size: 30px;
+  }
+
+  h2 {
+    font-size: 25px;
+  }
+
+  h3 {
+    font-size: 20px;
+  }
+
+  ul, ol, h1, h2, h3 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+  }
+
+  .callout {
+    background-color: #ececec;
+    padding: 10px;
+    margin-left: 20px;
+
+    &::before {
+      font-weight: 900;
+      font-family: "Font Awesome 5 Free";
+      margin-right: 10px;
+      content: "\f0eb"; // Lightbulb
+      color: #fffab9;
+    }
+  }
+
+  .quote {
+    padding: 10px;
+    border-left: solid 1px black;
+    font-style: italic;
+    margin-left: 20px;
+  }
+
+  .page-link {
+    color: black;
+    text-decoration: none;
+    padding: 3px;
+    border-radius: 2px;
+    background: #cecece;
+
+    &:hover {
+      cursor: pointer;
+      background: #ababab;
+    }
+  }
 }

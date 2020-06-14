@@ -10,6 +10,11 @@ export const getPages = createSelector(
   (pagesSect) => pagesSect.pages,
 );
 
+export const getPagesArray = createSelector(
+  getPages,
+  (pages) => Object.entries(pages).map(([id, p]) => ({ ...p, id, })),
+)
+
 export const getActivePageId = createSelector(
   getPagesSection,
   (pagesSect) => pagesSect.activePageId,
