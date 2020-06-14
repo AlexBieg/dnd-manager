@@ -25,14 +25,20 @@
   .callout {
     background-color: #ececec;
     padding: 10px;
+    padding-left: 30px;
     margin-left: 20px;
 
-    &::before {
+    &:first-child::before {
       font-weight: 900;
       font-family: "Font Awesome 5 Free";
       margin-right: 10px;
       content: "\f0eb"; // Lightbulb
       color: #fffab9;
+    }
+
+    &:first-child {
+      padding-left: 10px;
+      display: flex;
     }
   }
 

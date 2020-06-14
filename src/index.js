@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
 import logger from 'redux-logger';
+import { omit } from 'lodash';
 import './App.scss';
 import './index.scss';
 import App from './App';
@@ -12,9 +13,10 @@ const electron = window.require('electron');
 const ipcRenderer  = electron.ipcRenderer;
 
 // User data saving middleware
+const toOmitFromStore = ['rolls'];
 const saver = store => next => action => {
   let result = next(action)
-  ipcRenderer.send('save-user-data', JSON.stringify(store.getState()));
+  ipcRenderer.send('save-user-data', JSON.stringify(omit(store.getState(), toOmitFromStore)));
   return result
 }
 
