@@ -3,5 +3,7 @@
   color: white;
   padding: 20px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  max-width: 250px;
+  width: 250px;
 }

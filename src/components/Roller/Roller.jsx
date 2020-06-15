@@ -20,14 +20,14 @@ const Roller = () => {
     if (event.key === 'ArrowUp') {
       if (prevRollIndex < prevRolls.length - 1) {
         setprevRollIndex(prevRollIndex + 1);
-        setRollText(prevRolls[prevRollIndex + 1]);
+        setRollText(prevRolls[prevRollIndex + 1].rollText);
       }
     }
 
     if (event.key === 'ArrowDown') {
       if (prevRollIndex > 0) {
         setprevRollIndex(prevRollIndex - 1);
-        setRollText(prevRolls[prevRollIndex - 1]);
+        setRollText(prevRolls[prevRollIndex - 1].rollText);
       } else {
         setRollText('');
         setprevRollIndex(-1);

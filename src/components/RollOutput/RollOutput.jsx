@@ -1,40 +1,11 @@
 import React from 'react';
-import { get } from 'lodash';
 import classNames from 'classnames';
-import { useSelector } from 'react-redux';
-import { getRolls } from 'reducers/rolls';
+import { useSelector, useDispatch } from 'react-redux';
+import { getRolls, rollAction } from 'reducers/rolls';
 
 import './RollOutput.scss';
 
-const reg = /(?<number>\d+)?[dD](?<sides>\d+)(?<shift>[+-]\d+)?(?<adDis>[ad])?/;
 
-const rollDice = (data = {}) => {
-  const results = [];
-  const adDisAlt = [];
-
-  for (let i = 0; i < data.number; i++) {
-    if (data.adDis === 'a') {
-      const a = Math.floor(Math.random() * data.sides + 1);
-      const b = Math.floor(Math.random() * data.sides + 1);
-
-      results.push(Math.max(a, b));
-      adDisAlt.push(Math.min(a, b));
-    } else if (data.adDis === 'd') {
-      const a = Math.floor(Math.random() * data.sides + 1);
-      const b = Math.floor(Math.random() * data.sides + 1);
-
-      results.push(Math.min(a, b));
-      adDisAlt.push(Math.max(a, b));
-    } else {
-      results.push(Math.floor(Math.random() * data.sides + 1));
-    }
-  }
-
-  return {
-    results,
-    adDisAlt,
-  };
-}
 
 const Dice = ({ number, disabled }) => (
   <div className={classNames('die', { disabled })}>
@@ -46,30 +17,37 @@ const Dice = ({ number, disabled }) => (
 
 const RollOutput = () => {
   const rolls = useSelector(getRolls);
-  const match = (rolls[0] || '').match(reg);
-  const data = get(match, 'groups', {});
+  const dispatch = useDispatch();
 
-  data.sides = parseInt(data.sides);
-  data.number = parseInt(data.number) || 1;
-  data.shift = parseInt(data.shift || 0);
+  const rollsOutput = rolls.map((roll) => {
+    return roll.results.length > 0 && roll.results.reduce((acc, d, i) => {
+      if (roll.adDisAlt.length) {
+        acc.push(<Dice key={`${i}-alt`} disabled number={roll.adDisAlt[i]} />);
+      }
+      acc.push(<Dice key={i} number={d} />)
 
-  const { adDisAlt, results: dice } = rollDice(data);
-  const sum = dice.reduce((acc, num) => acc + num, 0) + data.shift;
+      return acc;
+    }, [])
+  });
 
-  const dComps = rolls.length > 0 && dice.reduce((acc, d, i) => {
-    if (adDisAlt.length) {
-      acc.push(<Dice key={i} disabled number={adDisAlt[i]} />);
-    }
-    acc.push(<Dice key={i} number={d} />)
-
-    return acc;
-  }, [])
+  const onReRoll = (i) => () => {
+    dispatch(rollAction(rolls[i].rollText))
+  }
 
   return (
-    <div className="roll-output">
-      { dComps }
-      { rolls.length > 0 && !!data.shift && <div> + {data.shift}</div>}
-      { rolls.length > 0 && <div className="sum"> = {sum}</div> }
+    <div className="all-rolls">
+      {
+        rollsOutput.map((out, i) => (
+          <div className="roll-output">
+            <div className="roll-text">{rolls[i].rollText}</div>
+            <div className="roll-dice" key={i} onClick={onReRoll(i)}>
+              { out }
+              { !!rolls[i].shift && <div className="roll-shift"> + {rolls[i].shift}</div>}
+              <div className="sum"> = {rolls[i].sum}</div>
+            </div>
+          </div>
+        ))
+      }
     </div>
   );
 };

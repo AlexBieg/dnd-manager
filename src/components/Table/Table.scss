@@ -1,3 +1,40 @@
 .table {
   margin-left: 10px;
+  overflow-x: auto;
+
+  .row-menu {
+    color: #cecece;
+    padding-left: 10px;
+    padding-right: 10px;
+
+    &:hover {
+      cursor: pointer;
+      color: #b0b0b0
+    }
+  }
+
+  .rdg {
+    border: none;
+    background: none;
+
+
+    .rdg-row, .rdg-header-row {
+      background: none;
+      .rdg-cell:first-child {
+        border-right: none;
+        border-bottom: none;
+        text-align: right;
+      }
+
+      .rdg-cell:last-child {
+        border-right: none;
+      }
+    }
+
+    .rdg-row:nth-last-child(2) {
+      .rdg-cell {
+        border-bottom: none;
+      }
+    }
+  }
 }

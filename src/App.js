@@ -14,8 +14,8 @@ function App() {
       <Sidebar />
       <div className="main">
         <Page pageId={activePageId}/>
-        <RollerBar />
       </div>
+      <RollerBar />
     </div>
   );
 }

@@ -156,7 +156,7 @@ const Sidebar = () => {
                     onUnfocus={onEndEdit(key)}
                     onChange={onEditName(key)}
                     isEditable={editingNames.has(key)} />
-                  <Icon icon="plus" onClick={onAdd(key)} />
+                  <Icon className="add-subpage" icon="plus" onClick={onAdd(key)} />
                   <Popover
                     isOpen={openMenus.has(key)}
                     position={'bottom'} // preferred position

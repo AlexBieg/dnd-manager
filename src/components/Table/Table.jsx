@@ -9,6 +9,12 @@ import Icon from 'components/Icon';
 import 'react-data-grid/dist/react-data-grid.css';
 import './Table.scss';
 
+const editColumn = {
+  key: 'edit-column',
+  name: '',
+  formatter: () => <Icon className="row-menu" icon="ellipsis-v" onClick={(e) => console.log(e)} />,
+}
+
 const Table = ({ id }) => {
   const dispatch = useDispatch();
   const table = useSelector(getTableById(id));
@@ -36,6 +42,10 @@ const Table = ({ id }) => {
     searchedRows = results.map(r => r.obj);
   }
 
+  const fullColumns = [
+    editColumn,
+    ...table.columns
+  ]
 
   return (
     <div className="table">
@@ -43,7 +53,8 @@ const Table = ({ id }) => {
       <Icon icon="columns" onClick={() => dispatch(tableAddCol(id)) } />
       <Input placeholder="Search..." onChange={(e) => setSearchTerm(e.target.value)} value={searchTerm} />
       <ReactDataGrid
-        columns={table.columns}
+        className="grid"
+        columns={fullColumns}
         rows={searchedRows.length ? searchedRows : table.rows}
         onRowsUpdate={onUpdateRow}
       />

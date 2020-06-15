@@ -1,7 +1,7 @@
 .sidebar {
   display: inline-block;
   max-width: 250px;
-  background-color: #cecece;
+  background-color: #ececec;
   width: 50%;
   height: 100%;
 
@@ -27,12 +27,21 @@
       min-width: -webkit-fill-available;
 
       &.active {
-        background: #bdbdbd;
+        background: #cecece;
       }
 
       &:hover {
-        background: #bdbdbd;
+        background: #cecece;
         cursor: pointer;
+
+        .menu, .add-subpage {
+          opacity: 1;
+        }
+      }
+
+      .menu, .add-subpage {
+        opacity: 0;
+        color: #a0a0a0;
       }
 
       .dropdown-caret {
