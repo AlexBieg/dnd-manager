@@ -1,13 +1,10 @@
 import { combineReducers } from 'redux';
 import rolls from './rolls';
 import pages from './pages';
-
-const objectsReducer = (state={}, action) => {
-  return state;
-};
+import tables from './tables';
 
 export default combineReducers({
-  objects: objectsReducer,
   pages,
   rolls,
+  tables,
 });

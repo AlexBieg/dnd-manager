@@ -5,11 +5,13 @@ import { connect } from 'react-redux';
 import fuzzsort from 'fuzzysort';
 import { get } from 'lodash';
 import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
+import Table from 'components/Table';
 
 import './MultiMediaInput.scss';
 
-const pageLinkRegex = /(\s)+\/(?<term>([a-zA-Z1-9])*)$/;
-const formatRegex = /#(?<format>([a-zA-Z1-9])+)/;
+const pageLinkRegex = /(\s)+#(?<term>([a-zA-Z1-9])*)$/;
+const formatRegex = /\/(?<format>([a-zA-Z1-9])+)/;
+const tableRegex = /^@@(?<tableId>[a-zA-Z1-9-]+)@@$/
 
 const formatOptions = {
   callout: '<div class="callout">Callout...</div>',
@@ -19,6 +21,7 @@ const formatOptions = {
   h1: '<h1>H1</h1>',
   h2: '<h2>H2</h2>',
   h3: '<h3>H3</h3>',
+  table: '@@select@@'
 }
 
 class MultiMediaInput extends React.Component {
@@ -104,7 +107,6 @@ class MultiMediaInput extends React.Component {
     }
 
     const formatMatch = value.match(formatRegex);
-    console.log(formatMatch);
     if (formatMatch && isFocused) {
       const formatMatches = fuzzsort.go(formatMatch.groups.format, Object.keys(formatOptions));
 
@@ -140,6 +142,13 @@ class MultiMediaInput extends React.Component {
       onChange
     } = this.props;
 
+    const tableMatch = value.match(tableRegex);
+
+    if (tableMatch) {
+      return (
+        <Table id={tableMatch.groups.tableId} />
+      )
+    }
 
     return (
       <ContentEditable
