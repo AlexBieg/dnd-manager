@@ -38,9 +38,9 @@ const RollOutput = () => {
     <div className="all-rolls">
       {
         rollsOutput.map((out, i) => (
-          <div className="roll-output">
+          <div className="roll-output" key={i}>
             <div className="roll-text">{rolls[i].rollText}</div>
-            <div className="roll-dice" key={i} onClick={onReRoll(i)}>
+            <div className="roll-dice" onClick={onReRoll(i)}>
               { out }
               { !!rolls[i].shift && <div className="roll-shift"> + {rolls[i].shift}</div>}
               <div className="sum"> = {rolls[i].sum}</div>

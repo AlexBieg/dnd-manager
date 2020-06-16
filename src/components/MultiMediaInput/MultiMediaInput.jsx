@@ -3,15 +3,17 @@ import classNames from 'classnames';
 import ContentEditable from 'react-contenteditable';
 import { connect } from 'react-redux';
 import fuzzsort from 'fuzzysort';
-import { get } from 'lodash';
+import { get, debounce } from 'lodash';
 import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
+import { rollAction } from 'reducers/rolls';
 import Table from 'components/Table';
 
 import './MultiMediaInput.scss';
 
 const pageLinkRegex = /(\s)+#(?<term>([a-zA-Z1-9])*)$/;
 const formatRegex = /\/(?<format>([a-zA-Z1-9])+)/;
-const tableRegex = /^@@(?<tableId>[a-zA-Z1-9-]+)@@$/
+const tableRegex = /^@@(?<tableId>[a-zA-Z1-9-]+)@@$/;
+const diceRegexGlobal = /(\s)+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?/g;
 
 const formatOptions = {
   callout: '<div class="callout">Callout...</div>',
@@ -76,21 +78,20 @@ class MultiMediaInput extends React.Component {
   }
 
   onClick = (e) => {
-    if (e.target.tagName === 'A') {
+    if (e.target.className === 'page-link') {
       const attrs = e.target.attributes;
       this.props.pagesSetActivePage(attrs.getNamedItem('page').value);
+    } else if (e.target.className === 'dice') {
+      this.props.rollAction(e.target.innerHTML);
     }
   }
 
   setFocus = () => {
-    // const { value } = this.props;
     const ce = this.contentEditable.current;
     ce.focus();
-    // ce.innerHTML = '';
-    // ce.innerHTML = value;
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     const { isFocused, bestPageMatch, bestFormatMatch } = this.state;
     const { value, pages, focus } = this.props;
 
@@ -135,11 +136,31 @@ class MultiMediaInput extends React.Component {
     onFocus(e);
   }
 
+  onBlur = () => {
+    const { value, onChange } = this.props;
+    const diceMatches = [...value.matchAll(diceRegexGlobal)];
+    if (diceMatches.length) {
+      let newValue = value;
+
+      diceMatches.forEach((matchList) => {
+        const match = matchList[0];
+        const fixedMatch = match.replace(/(\s)*/g, '');
+        newValue = newValue.replace(match, ` <a href="test" class="dice">${fixedMatch}</a> `);
+      });
+
+      onChange({ target: { value: newValue } });
+    }
+    this.setState({ isFocused: false });
+  }
+
+  onChangeInner = (e) => {
+    this.props.onChange(e)
+  }
+
   render() {
     const {
       className,
       value,
-      onChange
     } = this.props;
 
     const tableMatch = value.match(tableRegex);
@@ -154,8 +175,8 @@ class MultiMediaInput extends React.Component {
       <ContentEditable
         innerRef={this.contentEditable}
         onFocus={(e) => this.onFocus(e)}
-        onBlur={() => this.setState({ isFocused: false })}
-        onChange={onChange}
+        onBlur={() => this.onBlur()}
+        onChange={this.onChangeInner}
         className={classNames('multimedia-input', className)}
         onKeyDown={this.onKeyDownInner}
         onMouseDown={this.onClick}
@@ -173,6 +194,7 @@ const mapStateToProps = (state) => {
 
 const mapDispatchToProps = {
   pagesSetActivePage,
+  rollAction,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(MultiMediaInput);

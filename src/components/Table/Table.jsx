@@ -12,6 +12,8 @@ import './Table.scss';
 const editColumn = {
   key: 'edit-column',
   name: '',
+  width: 10,
+  maxWidth: 20,
   formatter: () => <Icon className="row-menu" icon="ellipsis-v" onClick={(e) => console.log(e)} />,
 }
 

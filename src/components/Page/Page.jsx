@@ -56,7 +56,6 @@ const Page = ({ pageId }) => {
   }
 
   const onAddContent = () => {
-    console.log(page);
     if (page.content.length === 0 || page.content[page.content.length - 1].length > 0) {
       setFocusRow(page.content.length);
       dispatch(pagesEditPage(pageId, {

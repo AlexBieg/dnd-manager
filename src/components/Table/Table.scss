@@ -1,10 +1,12 @@
 .table {
   margin-left: 10px;
   overflow-x: auto;
+  flex: 1;
+  width: 1px;
 
   .row-menu {
     color: #cecece;
-    padding-left: 10px;
+    padding-left: 0px;
     padding-right: 10px;
 
     &:hover {
@@ -23,7 +25,7 @@
       .rdg-cell:first-child {
         border-right: none;
         border-bottom: none;
-        text-align: right;
+        padding: none;
       }
 
       .rdg-cell:last-child {

@@ -61,4 +61,17 @@
       background: #ababab;
     }
   }
+
+  .dice {
+    padding: 3px;
+    border-radius: 2px;
+    background: #7aa2cc;
+    color: black;
+    text-decoration: none;
+
+    &:hover {
+      cursor: pointer;
+      background: #6080a2;
+    }
+  }
 }
