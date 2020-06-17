@@ -36,7 +36,7 @@ const rollDice = (text) => {
     results,
     adDisAlt,
     shift: data.shift,
-    sum: results.reduce((acc, r) => acc + r, 0)
+    sum: results.reduce((acc, r) => acc + r, 0) + (data.shift || 0),
   };
 }
 

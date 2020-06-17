@@ -1,7 +1,7 @@
 import React from 'react';
 import Input from 'components/Input';
 
-const EditableText = ({ className, text, isEditable, onChange=()=>{}, onUnfocus=()=>{} }) => {
+const EditableText = ({ className, text, isEditable=false, onChange=()=>{}, onUnfocus=()=>{}, onClick=()=>{} }) => {
   const onKeyDown = (event) => {
     if (event.key === 'Enter') {
       onUnfocus(event);
@@ -13,7 +13,7 @@ const EditableText = ({ className, text, isEditable, onChange=()=>{}, onUnfocus=
   }
 
   return (
-    <span className={className}>
+    <span className={className} onClick={onClick}>
       {text}
     </span>
   );

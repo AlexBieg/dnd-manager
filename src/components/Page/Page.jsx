@@ -122,10 +122,9 @@ const Page = ({ pageId }) => {
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
-                      {...provided.dragHandleProps}
                       className="content-row"
                     >
-                      <Icon className="grip" icon="grip-lines" />
+                      <Icon className="grip" icon="grip-lines" {...provided.dragHandleProps} />
                       <Popover
                         isOpen={menuOpen.includes(i)}
                         position={'bottom'}

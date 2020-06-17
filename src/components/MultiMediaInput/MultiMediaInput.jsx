@@ -3,17 +3,17 @@ import classNames from 'classnames';
 import ContentEditable from 'react-contenteditable';
 import { connect } from 'react-redux';
 import fuzzsort from 'fuzzysort';
-import { get, debounce } from 'lodash';
+import { get } from 'lodash';
 import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 import Table from 'components/Table';
 
 import './MultiMediaInput.scss';
 
-const pageLinkRegex = /(\s)+#(?<term>([a-zA-Z1-9])*)$/;
-const formatRegex = /\/(?<format>([a-zA-Z1-9])+)/;
+const pageLinkRegex = /(^|\s)+#(?<term>([a-zA-Z1-9])*)/;
+const formatRegex = /(^|\s)\/(?<format>([a-zA-Z1-9])+)/;
 const tableRegex = /^@@(?<tableId>[a-zA-Z1-9-]+)@@$/;
-const diceRegexGlobal = /(\s)+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?/g;
+const diceRegexGlobal = /(^|\s)+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?/g;
 
 const formatOptions = {
   callout: '<div class="callout">Callout...</div>',
@@ -27,6 +27,14 @@ const formatOptions = {
 }
 
 class MultiMediaInput extends React.Component {
+  static defaultProps = {
+    value: '',
+    onFocus: () => {},
+    onChange: () => {},
+    onBlur: () => {},
+    onKeyDown: () => {},
+  }
+
   constructor(props) {
     super(props);
 
@@ -91,7 +99,7 @@ class MultiMediaInput extends React.Component {
     ce.focus();
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate() {
     const { isFocused, bestPageMatch, bestFormatMatch } = this.state;
     const { value, pages, focus } = this.props;
 
@@ -137,7 +145,7 @@ class MultiMediaInput extends React.Component {
   }
 
   onBlur = () => {
-    const { value, onChange } = this.props;
+    const { value, onChange, onBlur } = this.props;
     const diceMatches = [...value.matchAll(diceRegexGlobal)];
     if (diceMatches.length) {
       let newValue = value;
@@ -163,7 +171,8 @@ class MultiMediaInput extends React.Component {
       value,
     } = this.props;
 
-    const tableMatch = value.match(tableRegex);
+
+    const tableMatch = (value).match(tableRegex);
 
     if (tableMatch) {
       return (

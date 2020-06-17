@@ -4,6 +4,36 @@
   flex: 1;
   width: 1px;
 
+  .table-name {
+    font-weight: bold;
+    font-size: 20px;
+    margin-left: -23px;
+  }
+
+  .table-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .table-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      & > * {
+        margin-left: 10px;
+      }
+
+      .search {
+        border: 1px solid #cecece;
+      }
+    }
+  }
+
+  .table-cell {
+    white-space: break-spaces;
+  }
+
   .row-menu {
     color: #cecece;
     padding-left: 0px;
@@ -18,7 +48,6 @@
   .rdg {
     border: none;
     background: none;
-
 
     .rdg-row, .rdg-header-row {
       background: none;
@@ -36,6 +65,16 @@
     .rdg-row:nth-last-child(2) {
       .rdg-cell {
         border-bottom: none;
+      }
+    }
+
+    .rdg-header-row {
+      .rdg-cell {
+        background: white;
+      }
+
+      .rdg-cell:first-child {
+        background: none;
       }
     }
   }
