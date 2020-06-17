@@ -62,10 +62,11 @@ export const tableDelRow = (tableId, rowId) => {
   }
 };
 
-export const tableEditRow = (rowId, rowChanges) => {
+export const tableEditRow = (tableId, rowId, rowChanges) => {
   return {
     type: TABLES_EDIT_ROW,
     data: {
+      tableId,
       rowId,
       rowChanges,
     }
@@ -111,7 +112,7 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
         tables: {
           ...state.tables,
           [data.id]: {
-            ...state[data.id],
+            ...state.tables[data.id],
             name: data.name,
           }
         }
@@ -151,6 +152,7 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
 
       return newState;
     case TABLES_EDIT_ROW:
+      const idCol = state.tables[data.tableId].columns[0];
       return {
         ...state,
         records: {
@@ -158,6 +160,7 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
           [data.rowId]: {
             ...state.records[data.rowId],
             ...data.rowChanges,
+            ...(data.rowChanges[idCol.name] ? { name: data.rowChanges[idCol.name] }: {})
           },
         }
       };

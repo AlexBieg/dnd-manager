@@ -4,6 +4,10 @@
   flex: 1;
   width: 1px;
 
+  td {
+    vertical-align: top;
+  }
+
   .table-name {
     font-weight: bold;
     font-size: 20px;
@@ -42,40 +46,6 @@
     &:hover {
       cursor: pointer;
       color: #b0b0b0
-    }
-  }
-
-  .rdg {
-    border: none;
-    background: none;
-
-    .rdg-row, .rdg-header-row {
-      background: none;
-      .rdg-cell:first-child {
-        border-right: none;
-        border-bottom: none;
-        padding: none;
-      }
-
-      .rdg-cell:last-child {
-        border-right: none;
-      }
-    }
-
-    .rdg-row:nth-last-child(2) {
-      .rdg-cell {
-        border-bottom: none;
-      }
-    }
-
-    .rdg-header-row {
-      .rdg-cell {
-        background: white;
-      }
-
-      .rdg-cell:first-child {
-        background: none;
-      }
     }
   }
 }

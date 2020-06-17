@@ -1,7 +1,7 @@
 import React from 'react';
 import Input from 'components/Input';
 
-const EditableText = ({ className, text, isEditable=false, onChange=()=>{}, onUnfocus=()=>{}, onClick=()=>{} }) => {
+const EditableText = ({ className, text, placeholder, isEditable=false, onChange=()=>{}, onUnfocus=()=>{}, onClick=()=>{} }) => {
   const onKeyDown = (event) => {
     if (event.key === 'Enter') {
       onUnfocus(event);
@@ -9,7 +9,7 @@ const EditableText = ({ className, text, isEditable=false, onChange=()=>{}, onUn
   }
 
   if (isEditable) {
-    return <Input autoFocus value={text} onChange={onChange} onBlur={onUnfocus} onKeyDown={onKeyDown} />
+    return <Input autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onUnfocus} onKeyDown={onKeyDown} />
   }
 
   return (

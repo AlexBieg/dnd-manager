@@ -6,12 +6,14 @@ import fuzzsort from 'fuzzysort';
 import { get } from 'lodash';
 import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
+import { getRecords } from 'reducers/tables';
 import Table from 'components/Table';
 
 import './MultiMediaInput.scss';
 
-const pageLinkRegex = /(^|\s)+#(?<term>([a-zA-Z1-9])*)/;
+const pageLinkRegex = /(^|\s)#(?<term>([a-zA-Z1-9])+)/;
 const formatRegex = /(^|\s)\/(?<format>([a-zA-Z1-9])+)/;
+const recordLinkRegex = /(^|\s)@(?<record>([a-zA-Z1-9])+)/;
 const tableRegex = /^@@(?<tableId>[a-zA-Z1-9-]+)@@$/;
 const diceRegexGlobal = /(^|\s)+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?/g;
 
@@ -33,6 +35,7 @@ class MultiMediaInput extends React.Component {
     onChange: () => {},
     onBlur: () => {},
     onKeyDown: () => {},
+    disabled: false,
   }
 
   constructor(props) {
@@ -44,12 +47,13 @@ class MultiMediaInput extends React.Component {
       isFocused: false,
       bestPageMatch: null,
       bestFormatMatch: null,
+      bestRecordMatch: null,
     }
   }
 
   onKeyDownInner = (event) => {
-    const { bestPageMatch, bestFormatMatch } = this.state;
-    const { onKeyDown, value, onChange } = this.props;
+    const { bestPageMatch, bestFormatMatch, bestRecordMatch } = this.state;
+    const { onKeyDown, value, onChange, records } = this.props;
 
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
@@ -60,7 +64,7 @@ class MultiMediaInput extends React.Component {
       if (bestPageMatch) {
         event.preventDefault();
         event.stopPropagation();
-        const link = ` <a href="test" class="page-link" page="${bestPageMatch.id}">${bestPageMatch.name}</a>`
+        const link = ` <a href="#" class="page-link" page="${bestPageMatch.id}">${bestPageMatch.name}</a>`
         const newVal = value.replace(pageLinkRegex, link);
         onChange({ target: { value: newVal } });
         return;
@@ -76,6 +80,16 @@ class MultiMediaInput extends React.Component {
         } else {
           format();
         }
+        return;
+      }
+
+      if (bestRecordMatch) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const link = ` <a href="#" class="record-link" record="${bestRecordMatch.__id}">${bestRecordMatch.name}</a>`
+        const newVal = value.replace(recordLinkRegex, link);
+        onChange({ target: { value: newVal }});
         return;
       }
     }
@@ -100,8 +114,8 @@ class MultiMediaInput extends React.Component {
   }
 
   componentDidUpdate() {
-    const { isFocused, bestPageMatch, bestFormatMatch } = this.state;
-    const { value, pages, focus } = this.props;
+    const { isFocused, bestPageMatch, bestFormatMatch, bestRecordMatch } = this.state;
+    const { value, pages, focus, records } = this.props;
 
     const pageLinkMatch = value.match(pageLinkRegex);
     if (pageLinkMatch && isFocused) {
@@ -126,6 +140,16 @@ class MultiMediaInput extends React.Component {
       this.setState({ bestFormatMatch: null });
     }
 
+    const recordRegexMatch = value.match(recordLinkRegex);
+    if (recordRegexMatch && isFocused) {
+      const recordMatches = fuzzsort.go(recordRegexMatch.groups.record, Object.values(records), { key: 'name' });
+      if (get(bestRecordMatch, '__id') !== get(recordMatches, '0.obj.__id')) {
+        this.setState({ bestRecordMatch: get(recordMatches, '0.obj') })
+      }
+    } else if (bestRecordMatch) {
+      this.setState({ bestRecordMatch: null });
+    }
+
     if (!isFocused && focus) {
       this.setFocus();
     }
@@ -148,17 +172,19 @@ class MultiMediaInput extends React.Component {
     const { value, onChange, onBlur } = this.props;
     const diceMatches = [...value.matchAll(diceRegexGlobal)];
     if (diceMatches.length) {
+
       let newValue = value;
 
       diceMatches.forEach((matchList) => {
         const match = matchList[0];
         const fixedMatch = match.replace(/(\s)*/g, '');
-        newValue = newValue.replace(match, ` <a href="test" class="dice">${fixedMatch}</a> `);
+        newValue = newValue.replace(match, ` <a href="#" class="dice">${fixedMatch}</a> `);
       });
 
       onChange({ target: { value: newValue } });
     }
     this.setState({ isFocused: false });
+    onBlur();
   }
 
   onChangeInner = (e) => {
@@ -169,6 +195,7 @@ class MultiMediaInput extends React.Component {
     const {
       className,
       value,
+      disabled,
     } = this.props;
 
 
@@ -182,6 +209,7 @@ class MultiMediaInput extends React.Component {
 
     return (
       <ContentEditable
+        disabled={disabled}
         innerRef={this.contentEditable}
         onFocus={(e) => this.onFocus(e)}
         onBlur={() => this.onBlur()}
@@ -190,6 +218,7 @@ class MultiMediaInput extends React.Component {
         onKeyDown={this.onKeyDownInner}
         onMouseDown={this.onClick}
         html={value}
+        tagName="pre"
       />
     );
   }
@@ -198,6 +227,7 @@ class MultiMediaInput extends React.Component {
 const mapStateToProps = (state) => {
   return {
     pages: getPagesArray(state),
+    records: getRecords(state),
   }
 }
 
