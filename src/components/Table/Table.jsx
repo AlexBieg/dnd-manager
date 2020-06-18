@@ -297,10 +297,6 @@ class Table extends React.Component {
       searchTerm,
     } = this.state;
 
-    if (id === 'select') {
-      return <div>Table Selector</div>
-    }
-
     const columnExtensions = table.columns.map(c => ({
       columnName: c.name,
       wordWrapEnabled: true,

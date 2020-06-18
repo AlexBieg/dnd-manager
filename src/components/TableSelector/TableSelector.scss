@@ -1,0 +1,49 @@
+.table-selector {
+  margin-left: 10px;
+  background-color: #ececec;
+  padding: 10px;
+
+  &__cancel {
+    text-align: right;
+    padding-right: 6px;
+  }
+
+  i {
+    color: #636363;
+
+    &:hover {
+      color: black;
+      cursor: pointer;
+    }
+  }
+
+  .table-selector-title {
+    font-weight: bold;
+  }
+
+  .available-tables {
+    padding: 5px;
+    color: #636363;
+
+
+    .available-table {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      .table-name {
+        padding: 5px;
+
+        &:hover {
+          background-color: #cecece;
+          cursor: pointer;
+          color: black;
+        }
+      }
+    }
+  }
+
+  .add-table {
+    margin-top: 10px;
+  }
+}

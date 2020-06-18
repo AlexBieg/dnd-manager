@@ -8,13 +8,14 @@ import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 import { getRecords } from 'reducers/tables';
 import Table from 'components/Table';
+import TableSelector from 'components/TableSelector';
 
 import './MultiMediaInput.scss';
 
-const pageLinkRegex = /(^|\s)#(?<term>([a-zA-Z1-9])+)/;
-const formatRegex = /(^|\s)\/(?<format>([a-zA-Z1-9])+)/;
-const recordLinkRegex = /(^|\s)@(?<record>([a-zA-Z1-9])+)/;
-const tableRegex = /^@@(?<tableId>[a-zA-Z1-9-]+)@@$/;
+const pageLinkRegex = /(^|\s)#(?<term>([a-zA-Z0-9])+)/;
+const formatRegex = /(^|\s)\/(?<format>([a-zA-Z0-9])+)/;
+const recordLinkRegex = /(^|\s)@(?<record>([a-zA-Z0-9])+)/;
+const tableRegex = /^@@(?<tableId>[a-zA-Z0-9-]+)@@$/;
 const diceRegexGlobal = /(^|\s)+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?/g;
 
 const formatOptions = {
@@ -191,6 +192,15 @@ class MultiMediaInput extends React.Component {
     this.props.onChange(e)
   }
 
+  onSelectTable = (id) => {
+    const { onChange } = this.props;
+    if (!id) {
+      onChange({ target: { value: '' }});
+    } else {
+      onChange({ target: { value: `@@${id}@@`}})
+    }
+  }
+
   render() {
     const {
       className,
@@ -201,9 +211,15 @@ class MultiMediaInput extends React.Component {
 
     const tableMatch = (value).match(tableRegex);
 
+    console.log(tableMatch, value);
+
     if (tableMatch) {
+      const id = tableMatch.groups.tableId
+      if (id === 'select') {
+        return <TableSelector onChange={this.onSelectTable} />
+      }
       return (
-        <Table id={tableMatch.groups.tableId} />
+        <Table id={id} />
       )
     }
 

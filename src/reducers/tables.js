@@ -1,5 +1,6 @@
 import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
+import { omit } from 'lodash';
 
 // Selectors
 export const getTablesSection = (state) => state.tables;
@@ -33,8 +34,24 @@ const TABLES_DEL_COL = 'TABLES_DEL_COL';
 const TABLES_EDIT_COL = 'TABLES_EDIT_COL';
 
 const TABLES_EDIT_NAME = 'TABLES_EDIT_NAME';
+const TABLES_CREATE_TABLE = 'TABLES_CREATE_TABLE';
+const TABLES_DELETE_TABLE = 'TABLES_DELETE_TABLE';
 
 // Action Creators
+export const tablesDeleteTable = (id) => {
+  return {
+    type: TABLES_DELETE_TABLE,
+    data: id,
+  }
+}
+
+export const tablesCreateTable = (name) => {
+  return {
+    type: TABLES_CREATE_TABLE,
+    data: name,
+  }
+};
+
 export const tableEditName = (id, name) => {
   return {
     type: TABLES_EDIT_NAME,
@@ -106,6 +123,29 @@ const INITIAL_STATE = {
 // Reducer
 const tables = (state=INITIAL_STATE, { type, data }) => {
   switch (type) {
+    case TABLES_DELETE_TABLE:
+      const rows = state.tables[data].rows;
+      return {
+        ...state,
+        tables: omit(state.tables, [data]),
+        records: omit(state.records, rows),
+      };
+    case TABLES_CREATE_TABLE:
+      const idColId = uuidV4();
+      return {
+        ...state,
+        tables: {
+          ...state.tables,
+          [uuidV4()]: {
+            name: data,
+            idColumn: idColId,
+            rows: [],
+            columns: [
+              {name: idColId, title: "Name", width: 80}
+            ]
+          }
+        }
+      }
     case TABLES_EDIT_NAME:
       return {
         ...state,
