@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
-import fuzzysort from 'fuzzysort';
-import { get } from 'lodash';
 import { TableCell } from '@material-ui/core';
 import {
-  findIndex
-} from 'lodash';
+  SortableContainer,
+  SortableHandle,
+  SortableElement,
+  arrayMove
+} from "react-sortable-hoc";
+import { findIndex } from 'lodash';
 import {
   Grid,
   Table as DXTable,
@@ -27,7 +29,6 @@ import {
 import {
   Plugin,
   Template,
-  TemplatePlaceholder,
   TemplateConnector,
   Getter,
 } from '@devexpress/dx-react-core';
@@ -41,6 +42,7 @@ import {
   tableDelCol,
   tableEditCols,
   tableEditName,
+  tablesOrderRows,
 } from 'reducers/tables';
 import EditableText from 'components/EditableText';
 import ManagedEditableText from 'components/ManagedEditableText';
@@ -49,17 +51,38 @@ import Icon from 'components/Icon';
 
 import './Table.scss';
 
+const DragHandle = SortableHandle(() => (
+  <span style={{ cursor: "move" }}>{"::::"}</span>
+));
+
 const CustomTableEditColumn = ({ onAddColumn }) => (
   <Plugin>
     <Getter
       name="tableColumns"
       computed={({ tableColumns }) => {
         const result = tableColumns.slice();
+        result.splice(0, 0, { key: "drag", type: "drag", width: 40 });
         result.splice(0, 0, { key: "delete", type: "delete", width: 40 });
         result.push({ key: "add-col", type: "add-col", width: 40 })
         return result;
       }}
     />
+    <Template
+      name="tableCell"
+      predicate={({ tableColumn, tableRow }) =>
+        tableColumn.type === "drag" && tableRow.type === DXTable.ROW_TYPE
+      }
+    >
+      {params => (
+        <TemplateConnector>
+          {() => (
+            <TableCell>
+              <DragHandle />
+            </TableCell>
+          )}
+        </TemplateConnector>
+      )}
+    </Template>
     <Template
       name="tableCell"
       predicate={({ tableColumn, tableRow }) =>
@@ -165,7 +188,6 @@ const CellEditorFormatter = ({ value, onValueChange=()=>{}, onBlur=()=>{}, ...re
       onBlur={onBlur}
       onFocus={() => setFocus(false)}
       onChange={(e) => {
-        console.log(e);
         onValueChange(e.target.value)
       }} />
   );
@@ -185,17 +207,21 @@ const CellTypeProvider = props => (
   />
 )
 
-const TitleComponent = ({ children, onChange }) => {
-  const [newTitle, setNewTitle] = useState(children);
+const TitleComponent = ({ title, onChange, deletable, onDelete }) => {
+  const [newTitle, setNewTitle] = useState(title);
 
   return (
-    <ManagedEditableText
-    text={newTitle}
-    onChange={(e) => setNewTitle(e.target.value)}
-    onUnfocus={() => {
-      console.log('changing');
-      onChange(newTitle)
-    }} />
+    <div className="column-header">
+      <ManagedEditableText
+        text={newTitle}
+        onChange={(e) => setNewTitle(e.target.value)}
+        onUnfocus={() => {
+          onChange(newTitle)
+        }}
+      />
+      { deletable && <Icon icon="trash" className="delete-column" onClick={onDelete} /> }
+    </div>
+
   );
 }
 
@@ -230,10 +256,10 @@ class Table extends React.Component {
     editCols(id, changedCols);
   }
 
-  onChangeColumnName = (colIndex) => (newTitle) => {
+  onChangeColumnName = (colId) => (newTitle) => {
     const { table, id, editCols } = this.props;
-    const newCols = table.columns.map((c, i) => {
-      if (colIndex === i) {
+    const newCols = table.columns.map((c) => {
+      if (c.name === colId) {
         return {
           ...c,
           title: newTitle,
@@ -243,6 +269,11 @@ class Table extends React.Component {
     });
 
     editCols(id, newCols);
+  }
+
+  onDeleteColumn = (colId) => () => {
+    const { delCol, id } = this.props;
+    delCol(id, colId);
   }
 
   onEditRow = (changes) => {
@@ -286,6 +317,11 @@ class Table extends React.Component {
     addCol(id);
   }
 
+  onReorderRows = ({ oldIndex, newIndex }) => {
+    const { id, table, reorderRows } = this.props
+    reorderRows(id, arrayMove(table.rows, oldIndex, newIndex));
+  }
+
   render() {
     const {
       id,
@@ -324,14 +360,30 @@ class Table extends React.Component {
           <DXTable
             title="test title"
             height={400}
+            bodyComponent={({ row, ...restProps }) => {
+              const TableBody = SortableContainer(DXTable.TableBody);
+              return (
+                <TableBody {...restProps} onSortEnd={this.onReorderRows} useDragHandle />
+              );
+            }}
+            rowComponent={({ row, ...restProps }) => {
+              const TableRow = SortableElement(DXTable.Row);
+              return <TableRow {...restProps} index={findIndex(table.rows, (r) => r === row.__id)} />;
+            }}
             columnExtensions={columnExtensions} />
           <TableColumnResizing
             columnWidths={columnWidths}
             onColumnWidthsChange={this.onChangeWidth}
           />
-          <TableHeaderRow titleComponent={({ children }) => (
-            <TitleComponent children={children} onChange={this.onChangeColumnName(findIndex(table.columns, (c) => c.title === children))} />
-          )} />
+          <TableHeaderRow contentComponent={({ column }) => {
+            return (
+              <TitleComponent
+                title={column.title}
+                deletable={column.name !== table.idColumn}
+                onDelete={this.onDeleteColumn(column.name)}
+                onChange={this.onChangeColumnName(column.name)} />
+            );
+          }} />
           <TableColumnReordering
             order={table.columns.map(c => c.name)}
             onOrderChange={this.onReorderColumns}
@@ -356,6 +408,7 @@ const mapStateToProps = (state, { id }) => ({
 const mapDispatchToProps = {
   editRow: tableEditRow,
   delRow: tableDelRow,
+  reorderRows: tablesOrderRows,
   delCol: tableDelCol,
   addRow: tableAddRow,
   addCol: tableAddCol,

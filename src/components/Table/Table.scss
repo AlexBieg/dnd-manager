@@ -4,6 +4,32 @@
   flex: 1;
   width: 1px;
 
+
+  .column-header {
+    display: flex;
+    align-items: center;
+
+    .delete-column {
+      margin-left: 10px;
+      opacity: 0;
+
+    }
+
+    &:hover {
+      .delete-column {
+        opacity: 1;
+      }
+    }
+  }
+
+  pre {
+    margin-top: 8px;
+
+    &[disabled] {
+      margin-top: 0px;
+    }
+  }
+
   i:hover {
     cursor: pointer;
   }

@@ -2,6 +2,8 @@ import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
 import { omit } from 'lodash';
 
+const diceRegexGlobal = /(^|\s|\()+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?(\))?/g;
+
 // Selectors
 export const getTablesSection = (state) => state.tables;
 export const getTables = createSelector(
@@ -28,6 +30,7 @@ export const getRecordsByTableId = (id) => createSelector(
 const TABLES_ADD_ROW = 'TABLES_ADD_ROW';
 const TABLES_DEL_ROW = 'TABLES_DEL_ROW';
 const TABLES_EDIT_ROW = 'TABLES_EDIT_ROW';
+const TABLES_ORDER_ROWS = 'TABLES_ORDER_ROWS';
 
 const TABLES_ADD_COL = 'TABLES_ADD_COL';
 const TABLES_DEL_COL = 'TABLES_DEL_COL';
@@ -38,6 +41,15 @@ const TABLES_CREATE_TABLE = 'TABLES_CREATE_TABLE';
 const TABLES_DELETE_TABLE = 'TABLES_DELETE_TABLE';
 
 // Action Creators
+export const tablesOrderRows = (tableId, rows) => {
+  return {
+    type: TABLES_ORDER_ROWS,
+    data: {
+      tableId,
+      rows,
+    }
+  }
+}
 export const tablesDeleteTable = (id) => {
   return {
     type: TABLES_DELETE_TABLE,
@@ -80,12 +92,32 @@ export const tableDelRow = (tableId, rowId) => {
 };
 
 export const tableEditRow = (tableId, rowId, rowChanges) => {
+  const fixedRowChanges = Object.entries(rowChanges).reduce((acc, [colId, val]) => {
+    const diceMatches = [...val.matchAll(diceRegexGlobal)];
+    if (diceMatches.length) {
+
+      let newValue = val;
+
+      diceMatches.forEach((matchList) => {
+        const match = matchList[0];
+        const fixedMatch = match.replace(/(\s|\(|\))*/g, '');
+        newValue = newValue.replace(match, ` <a href="#" class="dice">${fixedMatch}</a> `);
+      });
+
+      acc[colId] = newValue;
+    } else {
+      acc[colId] = val;
+    }
+
+    return acc;
+  }, {});
+
   return {
     type: TABLES_EDIT_ROW,
     data: {
       tableId,
       rowId,
-      rowChanges,
+      rowChanges: fixedRowChanges,
     }
   }
 }
@@ -97,10 +129,13 @@ export const tableAddCol = (id) => {
   }
 };
 
-export const tableDelCol = (id) => {
+export const tableDelCol = (tableId, colId) => {
   return {
     type: TABLES_DEL_COL,
-    data: id,
+    data: {
+      tableId,
+      colId
+    },
   }
 };
 
@@ -122,9 +157,21 @@ const INITIAL_STATE = {
 
 // Reducer
 const tables = (state=INITIAL_STATE, { type, data }) => {
+  let rows;
   switch (type) {
+    case TABLES_ORDER_ROWS:
+      return {
+        ...state,
+        tables: {
+          ...state.tables,
+          [data.tableId]: {
+            ...state.tables[data.tableId],
+            rows: [...data.rows],
+          }
+        }
+      };
     case TABLES_DELETE_TABLE:
-      const rows = state.tables[data].rows;
+      rows = state.tables[data].rows;
       return {
         ...state,
         tables: omit(state.tables, [data]),
@@ -192,7 +239,7 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
 
       return newState;
     case TABLES_EDIT_ROW:
-      const idCol = state.tables[data.tableId].columns[0];
+      const idCol = state.tables[data.tableId].idColumn;
       return {
         ...state,
         records: {
@@ -200,7 +247,7 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
           [data.rowId]: {
             ...state.records[data.rowId],
             ...data.rowChanges,
-            ...(data.rowChanges[idCol.name] ? { name: data.rowChanges[idCol.name] }: {})
+            ...(data.rowChanges[idCol] ? { name: data.rowChanges[idCol] }: {})
           },
         }
       };
@@ -222,17 +269,24 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
         }
       };
     case TABLES_DEL_COL:
+      rows = state.tables[data.tableId].rows;
+      const fixedRecords = Object.entries(state.records).reduce((acc, [key, r]) => {
+        acc[key] = omit(r, [data.colId]);
+        return acc;
+      }, {});
+
       return {
         ...state,
         tables: {
           ...state.tables,
-          [data]: {
-            ...(state.tables[data]),
+          [data.tableId]: {
+            ...(state.tables[data.tableId]),
             columns: [
-              ...state[data].columns.slice(0, -1),
+              ...state.tables[data.tableId].columns.filter(c => c.name !== data.colId),
             ]
           }
-        }
+        },
+        records: {...fixedRecords },
       };
     case TABLES_EDIT_COL:
       return {

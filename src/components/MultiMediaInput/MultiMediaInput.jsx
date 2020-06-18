@@ -211,8 +211,6 @@ class MultiMediaInput extends React.Component {
 
     const tableMatch = (value).match(tableRegex);
 
-    console.log(tableMatch, value);
-
     if (tableMatch) {
       const id = tableMatch.groups.tableId
       if (id === 'select') {
