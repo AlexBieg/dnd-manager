@@ -7,7 +7,7 @@ import {
   SortableElement,
   arrayMove
 } from "react-sortable-hoc";
-import { findIndex } from 'lodash';
+import { findIndex, get } from 'lodash';
 import {
   Grid,
   Table as DXTable,
@@ -19,17 +19,20 @@ import {
   SearchPanel,
   Toolbar,
   TableEditRow,
+  TableFilterRow,
 } from '@devexpress/dx-react-grid-material-ui';
 import {
   EditingState,
   SearchState,
   IntegratedFiltering,
   DataTypeProvider,
+  FilteringState,
 } from '@devexpress/dx-react-grid';
 import {
   Plugin,
   Template,
   TemplateConnector,
+  TemplatePlaceholder,
   Getter,
 } from '@devexpress/dx-react-core';
 import {
@@ -48,6 +51,7 @@ import EditableText from 'components/EditableText';
 import ManagedEditableText from 'components/ManagedEditableText';
 import MultiMediaInput from 'components/MultiMediaInput';
 import Icon from 'components/Icon';
+import Input from 'components/Input';
 
 import './Table.scss';
 
@@ -67,6 +71,14 @@ const CustomTableEditColumn = ({ onAddColumn }) => (
         return result;
       }}
     />
+    <Template
+      name="tableCell"
+      predicate={({ tableColumn, tableRow }) =>
+        tableRow.type === TableFilterRow.ROW_TYPE
+      }
+    >
+      <TemplatePlaceholder />
+    </Template>
     <Template
       name="tableCell"
       predicate={({ tableColumn, tableRow }) =>
@@ -199,13 +211,26 @@ const CellFormatter = ({ value }) => {
   );
 }
 
-const CellTypeProvider = props => (
-  <DataTypeProvider
-    formatterComponent={CellFormatter}
-    editorComponent={CellEditorFormatter}
-    {...props}
-  />
-)
+const CellTypeProvider = (props) => {
+  return (
+    <DataTypeProvider
+      formatterComponent={CellFormatter}
+      editorComponent={CellEditorFormatter}
+      {...props}
+    />
+  );
+}
+
+const FilterCell = ({ filter, onFilter, column }) => {
+  return (
+    <TableFilterRow.Cell className="filter-cell">
+      <Input
+        placeholder="Filter"
+        value={get(filter, 'value')}
+        onChange={(e) => onFilter({ columnName: column.name, value: e.target.value }) } />
+    </TableFilterRow.Cell>
+  );
+}
 
 const TitleComponent = ({ title, onChange, deletable, onDelete }) => {
   const [newTitle, setNewTitle] = useState(title);
@@ -231,6 +256,8 @@ class Table extends React.Component {
 
     this.state = {
       searchTerm: '',
+      filters: [],
+      currentSortRow: null,
     }
   }
 
@@ -322,6 +349,10 @@ class Table extends React.Component {
     reorderRows(id, arrayMove(table.rows, oldIndex, newIndex));
   }
 
+  onChangeFilters = (filters) => {
+    this.setState({ filters });
+  }
+
   render() {
     const {
       id,
@@ -331,6 +362,8 @@ class Table extends React.Component {
     } = this.props;
     const {
       searchTerm,
+      filters,
+      currentSortRow,
     } = this.state;
 
     const columnExtensions = table.columns.map(c => ({
@@ -356,6 +389,10 @@ class Table extends React.Component {
             onCommitChanges={(diff) => this.onCommitRows(diff)}
           />
           <SearchState value={searchTerm} onValueChange={term => this.setState({ searchTerm: term })} />
+          <FilteringState
+            filters={filters}
+            onFiltersChange={this.onChangeFilters}
+          />
           <IntegratedFiltering />
           <DXTable
             title="test title"
@@ -363,22 +400,29 @@ class Table extends React.Component {
             bodyComponent={({ row, ...restProps }) => {
               const TableBody = SortableContainer(DXTable.TableBody);
               return (
-                <TableBody {...restProps} onSortEnd={this.onReorderRows} useDragHandle />
+                <TableBody
+                  {...restProps}
+                  onSortEnd={this.onReorderRows}
+                  getHelperDimensions={({ node }) => ({ height: 100, width: node.offsetWidth })}
+                  getContainer={() => document.getElementById('page')}
+                  useDragHandle />
               );
             }}
             rowComponent={({ row, ...restProps }) => {
               const TableRow = SortableElement(DXTable.Row);
-              return <TableRow {...restProps} index={findIndex(table.rows, (r) => r === row.__id)} />;
+              const index = findIndex(table.rows, (r) => r === row.__id);
+              return <TableRow {...restProps} index={index} />;
             }}
             columnExtensions={columnExtensions} />
           <TableColumnResizing
             columnWidths={columnWidths}
             onColumnWidthsChange={this.onChangeWidth}
           />
-          <TableHeaderRow contentComponent={({ column }) => {
+          <TableHeaderRow contentComponent={({ column, children }) => {
             return (
               <TitleComponent
                 title={column.title}
+                children={children}
                 deletable={column.name !== table.idColumn}
                 onDelete={this.onDeleteColumn(column.name)}
                 onChange={this.onChangeColumnName(column.name)} />
@@ -393,6 +437,7 @@ class Table extends React.Component {
           <TitleToolbar name={table.name} onChange={(e) => editName(id, e.target.value)}/>
           <CustomTableEditColumn onAddColumn={this.onAddColumn}/>
           <TableEditRow />
+          <TableFilterRow cellComponent={FilterCell} />
           <TableInlineCellEditing />
         </Grid>
       </div>

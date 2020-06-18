@@ -107,7 +107,7 @@ const Page = ({ pageId }) => {
   }
 
   return (
-    <div className="page">
+    <div className="page" id="page">
       <div className="page-header">{page.name}</div>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable className="page-content" droppableId="content">
