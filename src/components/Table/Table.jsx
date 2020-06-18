@@ -49,32 +49,6 @@ import Icon from 'components/Icon';
 
 import './Table.scss';
 
-const EditableColumnNames = ({ onChangeColumnName }) => {
-  return (
-    <Plugin>
-      <Template
-        name="tableCell"
-        predicate={({ tableRow }) =>
-          tableRow.type === TableHeaderRow.ROW_TYPE
-        }
-      >
-        {(params) => (
-          <TemplateConnector>
-            {({...getters}, {...props}) => (
-              <TableCell>
-                <ManagedEditableText
-                  text={get(params, 'tableColumn.column.title', '')}
-                  onChange={(e) => onChangeColumnName(get(params, 'tableColumn.column.name', ''), e.target.value)}
-                />
-              </TableCell>
-            )}
-          </TemplateConnector>
-        )}
-      </Template>
-    </Plugin>
-  );
-}
-
 const CustomTableEditColumn = ({ onAddColumn }) => (
   <Plugin>
     <Getter
@@ -176,7 +150,6 @@ const TitleToolbar = ({ name, onChange}) => {
             onUnfocus={() => setIsEditing(false)}
           />
         </div>
-        <TemplatePlaceholder />
       </Template>
     </Plugin>
   );
@@ -212,6 +185,20 @@ const CellTypeProvider = props => (
   />
 )
 
+const TitleComponent = ({ children, onChange }) => {
+  const [newTitle, setNewTitle] = useState(children);
+
+  return (
+    <ManagedEditableText
+    text={newTitle}
+    onChange={(e) => setNewTitle(e.target.value)}
+    onUnfocus={() => {
+      console.log('changing');
+      onChange(newTitle)
+    }} />
+  );
+}
+
 class Table extends React.Component {
   constructor(props) {
     super(props);
@@ -243,13 +230,13 @@ class Table extends React.Component {
     editCols(id, changedCols);
   }
 
-  onChangeColumnName = (colId, title) => {
+  onChangeColumnName = (colIndex) => (newTitle) => {
     const { table, id, editCols } = this.props;
-    const newCols = table.columns.map((c) => {
-      if (c.name === colId) {
+    const newCols = table.columns.map((c, i) => {
+      if (colIndex === i) {
         return {
           ...c,
-          title,
+          title: newTitle,
         }
       }
       return {...c};
@@ -346,7 +333,9 @@ class Table extends React.Component {
             columnWidths={columnWidths}
             onColumnWidthsChange={this.onChangeWidth}
           />
-          <TableHeaderRow />
+          <TableHeaderRow titleComponent={({ children }) => (
+            <TitleComponent children={children} onChange={this.onChangeColumnName(findIndex(table.columns, (c) => c.title === children))} />
+          )} />
           <TableColumnReordering
             order={table.columns.map(c => c.name)}
             onOrderChange={this.onReorderColumns}
@@ -354,7 +343,6 @@ class Table extends React.Component {
           <Toolbar />
           <SearchPanel />
           <TitleToolbar name={table.name} onChange={(e) => editName(id, e.target.value)}/>
-          {/* <EditableColumnNames onChangeColumnName={this.onChangeColumnName} /> */}
           <CustomTableEditColumn onAddColumn={this.onAddColumn}/>
           <TableEditRow />
           <TableInlineCellEditing />
