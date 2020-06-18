@@ -257,7 +257,6 @@ class Table extends React.Component {
     this.state = {
       searchTerm: '',
       filters: [],
-      currentSortRow: null,
     }
   }
 
@@ -363,7 +362,6 @@ class Table extends React.Component {
     const {
       searchTerm,
       filters,
-      currentSortRow,
     } = this.state;
 
     const columnExtensions = table.columns.map(c => ({
