@@ -1,15 +1,15 @@
 import React from 'react';
 import Input from 'components/Input';
 
-const EditableText = ({ className, text, placeholder, isEditable=false, onChange=()=>{}, onUnfocus=()=>{}, onClick=()=>{} }) => {
+const EditableText = ({ className, text, placeholder, isEditable=false, onChange=()=>{}, onBlur=()=>{}, onClick=()=>{} }) => {
   const onKeyDown = (event) => {
     if (event.key === 'Enter') {
-      onUnfocus(event);
+      onBlur(event);
     }
   }
 
   if (isEditable) {
-    return <Input autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onUnfocus} onKeyDown={onKeyDown} />
+    return <Input autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeyDown} />
   }
 
   return (

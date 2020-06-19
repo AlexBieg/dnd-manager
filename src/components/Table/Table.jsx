@@ -11,6 +11,7 @@ import { findIndex, get } from 'lodash';
 import {
   Grid,
   Table as DXTable,
+  VirtualTable,
   TableHeaderRow,
   TableColumnResizing,
   TableInlineCellEditing,
@@ -182,7 +183,7 @@ const TitleToolbar = ({ name, onChange}) => {
             placeholder="Table Name..."
             onChange={onChange}
             onClick={() => setIsEditing(true)}
-            onUnfocus={() => setIsEditing(false)}
+            onBlur={() => setIsEditing(false)}
           />
         </div>
       </Template>
@@ -240,7 +241,7 @@ const TitleComponent = ({ title, onChange, deletable, onDelete }) => {
       <ManagedEditableText
         text={newTitle}
         onChange={(e) => setNewTitle(e.target.value)}
-        onUnfocus={() => {
+        onBlur={() => {
           onChange(newTitle)
         }}
       />
@@ -250,7 +251,7 @@ const TitleComponent = ({ title, onChange, deletable, onDelete }) => {
   );
 }
 
-class Table extends React.Component {
+class Table extends React.PureComponent {
   constructor(props) {
     super(props);
 
@@ -392,9 +393,8 @@ class Table extends React.Component {
             onFiltersChange={this.onChangeFilters}
           />
           <IntegratedFiltering />
-          <DXTable
-            title="test title"
-            height={400}
+          <VirtualTable
+            height={800}
             bodyComponent={({ row, ...restProps }) => {
               const TableBody = SortableContainer(DXTable.TableBody);
               return (
@@ -411,7 +411,8 @@ class Table extends React.Component {
               const index = findIndex(table.rows, (r) => r === row.__id);
               return <TableRow {...restProps} index={index} />;
             }}
-            columnExtensions={columnExtensions} />
+            columnExtensions={columnExtensions}
+          />
           <TableColumnResizing
             columnWidths={columnWidths}
             onColumnWidthsChange={this.onChangeWidth}

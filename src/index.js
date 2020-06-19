@@ -31,9 +31,9 @@ ipcRenderer.on('user-data', (e, data) => {
 
   ReactDOM.render(
     <Provider store={store}>
-      <React.StrictMode>
+      {/* <React.StrictMode> */}
         <App />
-      </React.StrictMode>
+      {/* </React.StrictMode> */}
     </Provider>,
     document.getElementById('root')
   );

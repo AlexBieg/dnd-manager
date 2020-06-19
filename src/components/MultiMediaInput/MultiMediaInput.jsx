@@ -8,6 +8,7 @@ import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 import { getRecords } from 'reducers/tables';
 import Table from 'components/Table';
+import VirtualizedTable from 'components/VirtualizedTable';
 import TableSelector from 'components/TableSelector';
 
 import './MultiMediaInput.scss';
@@ -37,6 +38,7 @@ class MultiMediaInput extends React.Component {
     onBlur: () => {},
     onKeyDown: () => {},
     disabled: false,
+    style: {},
   }
 
   constructor(props) {
@@ -54,7 +56,7 @@ class MultiMediaInput extends React.Component {
 
   onKeyDownInner = (event) => {
     const { bestPageMatch, bestFormatMatch, bestRecordMatch } = this.state;
-    const { onKeyDown, value, onChange, records } = this.props;
+    const { onKeyDown, value, onChange } = this.props;
 
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
@@ -111,7 +113,9 @@ class MultiMediaInput extends React.Component {
 
   setFocus = () => {
     const ce = this.contentEditable.current;
-    ce.focus();
+    if (ce) {
+      ce.focus();
+    }
   }
 
   componentDidUpdate() {
@@ -189,7 +193,11 @@ class MultiMediaInput extends React.Component {
   }
 
   onChangeInner = (e) => {
-    this.props.onChange(e)
+    const { value } = this.props;
+
+    if (e.target.value !== value) {
+      this.props.onChange(e)
+    }
   }
 
   onSelectTable = (id) => {
@@ -206,6 +214,7 @@ class MultiMediaInput extends React.Component {
       className,
       value,
       disabled,
+      style
     } = this.props;
 
 
@@ -217,12 +226,13 @@ class MultiMediaInput extends React.Component {
         return <TableSelector onChange={this.onSelectTable} />
       }
       return (
-        <Table id={id} />
+        <VirtualizedTable id={id} />
       )
     }
 
     return (
       <ContentEditable
+        style={style}
         disabled={disabled}
         innerRef={this.contentEditable}
         onFocus={(e) => this.onFocus(e)}

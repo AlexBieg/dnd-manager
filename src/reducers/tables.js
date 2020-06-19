@@ -1,6 +1,7 @@
 import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
 import { omit } from 'lodash';
+import { stat } from 'fs';
 
 const diceRegexGlobal = /(^|\s|\()+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?(\))?/g;
 
@@ -39,8 +40,69 @@ const TABLES_EDIT_COL = 'TABLES_EDIT_COL';
 const TABLES_EDIT_NAME = 'TABLES_EDIT_NAME';
 const TABLES_CREATE_TABLE = 'TABLES_CREATE_TABLE';
 const TABLES_DELETE_TABLE = 'TABLES_DELETE_TABLE';
+const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
 
 // Action Creators
+export const tablesImportTable = (data, name, idColumnIndex) => {
+  const idColumnId = uuidV4();
+
+  const columns = data[0].map((c, i) => ({
+    name: (i === idColumnIndex ? idColumnId : uuidV4()),
+    title: c,
+    width: 80,
+  }));
+
+  const rows = [];
+  const records = {};
+
+  for (let i = 1; i < data.length; i++) {
+    const rId = uuidV4();
+    rows.push(rId);
+
+    const dataRow = data[i];
+    records[rId] = {
+      __id: rId,
+      name: dataRow[idColumnIndex],
+      ...dataRow.reduce((acc, colVal, dataIndex) => {
+        const diceMatches = [...colVal.matchAll(diceRegexGlobal)];
+
+        if (diceMatches.length) {
+
+          let newValue = colVal;
+
+          diceMatches.forEach((matchList) => {
+            const match = matchList[0];
+            const fixedMatch = match.replace(/(\s|\(|\))*/g, '');
+            newValue = newValue.replace(match, ` <a href="#" class="dice">${fixedMatch}</a> `);
+          });
+
+          acc[columns[dataIndex].name] = newValue;
+          return acc;
+        }
+
+        acc[columns[dataIndex].name] = colVal;
+        return acc;
+      }, {})
+    }
+  }
+
+  const table = {
+    name,
+    idColumn: idColumnId,
+    columns,
+    rows,
+  }
+
+  return {
+    type: TABLES_IMPORT_TABLE,
+    data: {
+      tableId: uuidV4(),
+      table,
+      records,
+    },
+  }
+}
+
 export const tablesOrderRows = (tableId, rows) => {
   return {
     type: TABLES_ORDER_ROWS,
@@ -159,6 +221,18 @@ const INITIAL_STATE = {
 const tables = (state=INITIAL_STATE, { type, data }) => {
   let rows;
   switch (type) {
+    case TABLES_IMPORT_TABLE:
+      return {
+        ...state,
+        tables: {
+          ...state.tables,
+          [data.tableId]: data.table,
+        },
+        records: {
+          ...state.records,
+          ...data.records,
+        }
+      }
     case TABLES_ORDER_ROWS:
       return {
         ...state,
@@ -217,8 +291,8 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
           [data]: {
             ...(state.tables[data]),
             rows: [
-              ...state.tables[data].rows,
               id,
+              ...state.tables[data].rows,
             ]
           }
         }

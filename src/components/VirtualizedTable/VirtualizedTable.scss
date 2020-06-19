@@ -1,0 +1,55 @@
+.v-table {
+  width: 100%;
+  height: 800px;
+  overflow: hidden;
+
+  i {
+    color: #cecece;
+    padding-left: 5px;
+    &:hover {
+      color: black;
+      cursor: pointer;
+    }
+  }
+
+  .v-header-cell {
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    border-right: solid 1px #cecece;
+    background: #ececec;
+    align-items: center;
+    flex-flow: wrap;
+
+    .v-header-text {
+      padding-left: 10px;
+      display: inline-block;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 5px;
+    }
+
+    .v-header-grip {
+      &:hover {
+        cursor: col-resize;
+      }
+    }
+
+    .v-table-filter {
+      flex-basis: 100%;
+      margin: 5px;
+    }
+  }
+
+  .v-data-cell {
+    border-bottom: 1px solid #cecece;
+    border-right: 1px solid #cecece;
+    display: flex;
+    align-items: center;
+
+    & > * {
+      padding: 10px;
+    }
+  }
+}

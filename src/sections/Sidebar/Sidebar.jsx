@@ -14,6 +14,7 @@ import Button from 'components/Button';
 import Icon from 'components/Icon';
 import PopoverMenu from 'components/PopoverMenu';
 import EditableText from 'components/EditableText';
+import Importer from 'sections/Importer';
 import './Sidebar.scss';
 
 const buildOrderAndLevels = (pages) => {
@@ -153,7 +154,7 @@ const Sidebar = () => {
                   <EditableText
                     className="page-name"
                     text={page.name}
-                    onUnfocus={onEndEdit(key)}
+                    onBlur={onEndEdit(key)}
                     onChange={onEditName(key)}
                     isEditable={editingNames.has(key)} />
                   <Icon className="add-subpage" icon="plus" onClick={onAdd(key)} />
@@ -172,6 +173,7 @@ const Sidebar = () => {
         </div>
       </div>
       <Button className="add-page" value="Add New Page" onClick={onAdd()} />
+      <Importer />
     </div>
   );
 };
