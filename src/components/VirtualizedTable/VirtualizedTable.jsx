@@ -31,11 +31,6 @@ import Popover from 'components/Popover';
 import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
 
-const cache = new CellMeasurerCache({
-  defaultWidth: 150,
-  defaultHeight: 100,
-  fixedWidth: true
-});
 
 const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterValue='', onDeleteColumn }) => {
   const [dragStart, setDragStart] = useState(null);
@@ -91,12 +86,17 @@ class VirtualizedTable extends React.Component {
     this.state = {
       filters: {},
       filteredRecords: props.records,
+      cache: new CellMeasurerCache({
+        defaultWidth: 150,
+        defaultHeight: 100,
+        fixedWidth: true
+      })
     }
   }
 
   onRenderCell = ({ columnIndex, rowIndex, key, style, parent }) => {
     const { table } = this.props;
-    const { filteredRecords, filters } = this.state;
+    const { filteredRecords, filters, cache } = this.state;
 
 
     if (rowIndex === 0) {
@@ -193,12 +193,11 @@ class VirtualizedTable extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
     const { id, table, records } = this.props;
-    const { filters } = this.state;
+    const { filters, cache } = this.state;
     const prevWidth = prevProps.table.columns.reduce((acc, c) => acc + c.width, 0);
     const newWidth = table.columns.reduce((acc, c) => acc + c.width, 0);
 
     if (prevWidth !== newWidth) {
-      console.log('width changed');
       cache.clearAll();
       this.forceUpdate();
     }
@@ -229,7 +228,7 @@ class VirtualizedTable extends React.Component {
 
   render() {
     const { table } = this.props;
-    const { filteredRecords} = this.state;
+    const { filteredRecords, cache } = this.state;
 
     cache.clearAll();
 
