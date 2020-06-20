@@ -141,7 +141,7 @@ class VirtualizedTable extends React.Component {
       columnDragStartIndex: null,
       cache: new CellMeasurerCache({
         defaultWidth: 150,
-        defaultHeight: 100,
+        defaultHeight: 39,
         fixedWidth: true,
       })
     }
@@ -344,31 +344,36 @@ class VirtualizedTable extends React.Component {
     // add a record for the header row
     const totalRecords = [{}, ...filteredRecords];
 
+    const totalHeight = totalRecords.length < 15 ? totalRecords.reduce((acc, _, i) => acc + cache.rowHeight(i), 0) : 1000;
+    const outerHeight = Math.min(totalHeight + 70, 760);
+
     return (
-      <div className="v-table">
+      <div className="v-table" style={{ height: outerHeight}}>
         <div className="v-table-header">
           <ManagedEditableText text={table.name} onChange={(e) => this.onChangeTableName(e.target.value)} />
           <Icon icon="plus" onClick={this.onAddRow(0)} />
           <Icon icon="columns" onClick={this.onAddColumn} />
         </div>
-        <AutoSizer>
-          {
-            ({ width, height }) => (
-              <MultiGrid
-                useDragHandle
-                headerHeight={30}
-                height={height}
-                width={width}
-                fixedRowCount={1}
-                rowCount={totalRecords.length}
-                rowHeight={({index}) => cache.rowHeight({index}) + (index === 0 ? 10 : 0)}
-                columnCount={table.columns.length}
-                columnWidth={({ index }) => table.columns[index].width}
-                cellRenderer={this.onRenderCell}
-              />
-            )
-          }
-        </AutoSizer>
+        <div className="v-table-grid">
+          <AutoSizer>
+            {
+              ({ width, height }) => (
+                <MultiGrid
+                  useDragHandle
+                  headerHeight={30}
+                  height={height}
+                  width={width}
+                  fixedRowCount={1}
+                  rowCount={totalRecords.length}
+                  rowHeight={({index}) => cache.rowHeight({index}) + (index === 0 ? 10 : 0)}
+                  columnCount={table.columns.length}
+                  columnWidth={({ index }) => table.columns[index].width}
+                  cellRenderer={this.onRenderCell}
+                />
+              )
+            }
+          </AutoSizer>
+        </div>
       </div>
     );
   }

@@ -1,7 +1,13 @@
 .v-table {
   width: 100%;
-  height: 760px;
+  // height: 760px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  .v-table-grid {
+    flex: 1 1 auto;
+  }
 
   .v-table-header {
     font-size: 20px;
