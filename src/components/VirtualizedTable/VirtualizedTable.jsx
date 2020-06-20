@@ -10,7 +10,6 @@ import {
   CellMeasurer,
   CellMeasurerCache,
 } from 'react-virtualized';
-import Popover from 'react-tiny-popover'
 import {
   getTableById,
   getRecordsByTableId,
@@ -27,7 +26,7 @@ import MultiMediaInput from 'components/MultiMediaInput';
 import ManagedEditableText from 'components/ManagedEditableText';
 import Icon from 'components/Icon';
 import Input from 'components/Input';
-import PopoverMenu from 'components/PopoverMenu';
+import Popover from 'components/Popover';
 
 import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
@@ -38,7 +37,7 @@ const cache = new CellMeasurerCache({
   fixedWidth: true
 });
 
-const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterValue='' }) => {
+const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterValue='', onDeleteColumn }) => {
   const [dragStart, setDragStart] = useState(null);
 
   return (
@@ -46,6 +45,7 @@ const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterVal
       <ManagedEditableText text={value} className="v-header-text" />
       <Icon
         icon="trash"
+        onClick={onDeleteColumn}
       />
       <Icon
         className="v-header-grip"
@@ -56,34 +56,24 @@ const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterVal
       />
       <Input
         className="v-table-filter"
-        placeholder="filter"
+        placeholder="Filter..."
         value={filterValue}
         onChange={e => onChangeFilters(e.target.value)} />
     </div>
   );
 }
 
-const menuOptions = [
-  { text: 'Delete', icon: 'trash-alt', onClick: () => {console.log('deleting row')} }
-]
-
-const DataCell = ({ style, value, onChange, hasMenu=false }) => {
+const DataCell = ({ style, value, onChange, onDeleteRow, onAddRow, hasMenu=false }) => {
   const debouncedOnChange = debounce(onChange, 300);
-  const [menuIsOpen, setMenuIsOpen] = useState(false);
   return (
     <div style={style} className="v-data-cell">
       {
         hasMenu &&
-          <Popover
-            isOpen={menuIsOpen}
-            position={'bottom'} // preferred position
-            content={(props) => {
-              console.log(props);
-              return <PopoverMenu options={menuOptions} />
-            }}
-            onClickOutside={() => setMenuIsOpen(false)}
-          >
-            <Icon className="menu" icon="ellipsis-v" onClick={() => setMenuIsOpen(true)}/>
+          <Popover options={[
+            { text: 'Delete Row', icon: 'trash-alt', onClick: () => onDeleteRow() },
+            { text: 'Add Row Above', icon: 'plus', onClick: () => onAddRow() }
+          ]}>
+            <Icon className="menu" icon="ellipsis-v" />
           </Popover>
       }
       <MultiMediaInput
@@ -122,12 +112,16 @@ class VirtualizedTable extends React.Component {
             style={{...style }}
             value={table.columns[columnIndex].title}
             onChangeColWidth={this.onChangeColWidth(columnIndex)}
+            onDeleteColumn={this.onDelColumn(columnIndex)}
             onChangeFilters={this.onSetFilters(table.columns[columnIndex].name)}
             filterValue={filters[table.columns[columnIndex].name]}
           />
         </CellMeasurer>
       )
     }
+
+    const recordIndex = rowIndex - 1;
+
     return (
       <CellMeasurer
         cache={cache}
@@ -138,11 +132,24 @@ class VirtualizedTable extends React.Component {
       >
         <DataCell
           style={{...style}}
-          onChange={this.onEditCell(columnIndex, rowIndex - 1)}
+          onChange={this.onEditCell(columnIndex, recordIndex)}
+          onDeleteRow={this.onDeleteRow(recordIndex)}
+          onAddRow={this.onAddRow(recordIndex)}
           hasMenu={columnIndex === 0}
           value={filteredRecords[rowIndex - 1][table.columns[columnIndex].name]} />
       </CellMeasurer>
     )
+  }
+
+  onDeleteRow = (rowIndex) => () => {
+    const { table, id, delRow } = this.props;
+
+    delRow(id, table.rows[rowIndex]);
+  }
+
+  onAddRow = (index=0) => () => {
+    const { id, addRow } = this.props;
+    addRow(id, index)
   }
 
   onChangeColWidth = (columnIndex) => (diff) => {
@@ -191,6 +198,7 @@ class VirtualizedTable extends React.Component {
     const newWidth = table.columns.reduce((acc, c) => acc + c.width, 0);
 
     if (prevWidth !== newWidth) {
+      console.log('width changed');
       cache.clearAll();
       this.forceUpdate();
     }
@@ -208,6 +216,17 @@ class VirtualizedTable extends React.Component {
     }
   }
 
+  onAddColumn = () => {
+    const { id, addCol } = this.props;
+    addCol(id);
+  }
+
+  onDelColumn = (colIndex) => () => {
+    const { delCol, id, table } = this.props;
+
+    delCol(id, table.columns[colIndex].name);
+  }
+
   render() {
     const { table } = this.props;
     const { filteredRecords} = this.state;
@@ -219,7 +238,11 @@ class VirtualizedTable extends React.Component {
 
     return (
       <div className="v-table">
-        <div className="v-table-header">{table.name}</div>
+        <div className="v-table-header">
+          <ManagedEditableText text={table.name} />
+          <Icon icon="plus" onClick={this.onAddRow(0)} />
+          <Icon icon="columns" onClick={this.onAddColumn} />
+        </div>
         <AutoSizer>
           {
             ({ width, height }) => (
@@ -250,7 +273,11 @@ const mapStateToProps = (state, props) => ({
 
 const mapDispatchToProps = {
   editRow: tableEditRow,
+  delRow: tableDelRow,
   editCols: tableEditCols,
+  addRow: tableAddRow,
+  addCol: tableAddCol,
+  delCol: tableDelCol,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VirtualizedTable);

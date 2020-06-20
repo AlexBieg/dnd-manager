@@ -1,7 +1,6 @@
 import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
 import { omit } from 'lodash';
-import { stat } from 'fs';
 
 const diceRegexGlobal = /(^|\s|\()+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?(\))?/g;
 
@@ -136,10 +135,13 @@ export const tableEditName = (id, name) => {
   }
 };
 
-export const tableAddRow = (id) => {
+export const tableAddRow = (id, index) => {
   return {
     type: TABLES_ADD_ROW,
-    data: id,
+    data: {
+      id,
+      index
+    },
   }
 };
 
@@ -280,6 +282,9 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
       };
     case TABLES_ADD_ROW:
       const id = uuidV4();
+      const newRows = [...state.tables[data.id].rows];
+      newRows.splice(data.index, 0, id);
+
       return {
         ...state,
         records: {
@@ -288,12 +293,9 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
         },
         tables: {
           ...state.tables,
-          [data]: {
-            ...(state.tables[data]),
-            rows: [
-              id,
-              ...state.tables[data].rows,
-            ]
+          [data.id]: {
+            ...(state.tables[data.id]),
+            rows: newRows,
           }
         }
       };
@@ -337,6 +339,7 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
               {
                 name: uuidV4(),
                 title: 'Column',
+                width: 80,
               },
             ]
           }

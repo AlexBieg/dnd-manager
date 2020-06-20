@@ -7,7 +7,6 @@ import { get } from 'lodash';
 import { getPagesArray, pagesSetActivePage } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 import { getRecords } from 'reducers/tables';
-import Table from 'components/Table';
 import VirtualizedTable from 'components/VirtualizedTable';
 import TableSelector from 'components/TableSelector';
 
