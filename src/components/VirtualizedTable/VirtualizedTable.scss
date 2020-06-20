@@ -3,6 +3,16 @@
   height: 800px;
   overflow: hidden;
 
+  .v-table-header {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+
+    input {
+      max-width: 100px;
+    }
+  }
+
   i {
     color: #cecece;
     padding-left: 5px;

@@ -9,7 +9,7 @@ const EditableText = ({ className, text, placeholder, isEditable=false, onChange
   }
 
   if (isEditable) {
-    return <Input autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeyDown} />
+    return <Input className={className} autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeyDown} />
   }
 
   return (

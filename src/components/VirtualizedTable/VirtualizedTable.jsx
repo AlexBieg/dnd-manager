@@ -4,6 +4,7 @@ import {
   get,
   debounce,
 } from 'lodash';
+import { arrayMove } from 'react-sortable-hoc';
 import {
   MultiGrid,
   AutoSizer,
@@ -32,16 +33,28 @@ import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
 
 
-const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterValue='', onDeleteColumn }) => {
+const HeaderCell = ({
+  style,
+  value,
+  onChangeColWidth,
+  onChangeFilters,
+  filterValue='',
+  onDeleteColumn,
+  deleteable,
+  onChangeColumnName,
+}) => {
   const [dragStart, setDragStart] = useState(null);
 
   return (
     <div style={style} className="v-header-cell">
-      <ManagedEditableText text={value} className="v-header-text" />
-      <Icon
-        icon="trash"
-        onClick={onDeleteColumn}
-      />
+      <ManagedEditableText text={value} className="v-header-text" onChange={(e) => onChangeColumnName(e.target.value)} />
+      {
+        deleteable &&
+        <Icon
+          icon="trash"
+          onClick={onDeleteColumn}
+        />
+      }
       <Icon
         className="v-header-grip"
         draggable
@@ -58,10 +71,17 @@ const HeaderCell = ({ style, value, onChangeColWidth, onChangeFilters, filterVal
   );
 }
 
-const DataCell = ({ style, value, onChange, onDeleteRow, onAddRow, hasMenu=false }) => {
+const DataCell = ({ style, value, onChange, onDeleteRow, onAddRow, hasMenu=false, index, showDrag, onStartDrag, onDrop }) => {
   const debouncedOnChange = debounce(onChange, 300);
   return (
-    <div style={style} className="v-data-cell">
+    <div
+      index={index}
+      style={style}
+      className="v-data-cell"
+      onDrop={onDrop}
+      onDragOver={e => e.preventDefault()}
+    >
+      { showDrag && <Icon index={index} icon="grip-lines" draggable onDragStart={onStartDrag} /> }
       {
         hasMenu &&
           <Popover options={[
@@ -89,7 +109,8 @@ class VirtualizedTable extends React.Component {
       cache: new CellMeasurerCache({
         defaultWidth: 150,
         defaultHeight: 100,
-        fixedWidth: true
+        fixedWidth: true,
+        dragStartIndex: null,
       })
     }
   }
@@ -112,15 +133,18 @@ class VirtualizedTable extends React.Component {
             style={{...style }}
             value={table.columns[columnIndex].title}
             onChangeColWidth={this.onChangeColWidth(columnIndex)}
+            deleteable={table.idColumn !== table.columns[columnIndex].name}
             onDeleteColumn={this.onDelColumn(columnIndex)}
             onChangeFilters={this.onSetFilters(table.columns[columnIndex].name)}
             filterValue={filters[table.columns[columnIndex].name]}
+            onChangeColumnName={this.onChangeColumnName(columnIndex)}
           />
         </CellMeasurer>
       )
     }
 
     const recordIndex = rowIndex - 1;
+
 
     return (
       <CellMeasurer
@@ -131,14 +155,25 @@ class VirtualizedTable extends React.Component {
         rowIndex={rowIndex}
       >
         <DataCell
+          index={recordIndex}
           style={{...style}}
           onChange={this.onEditCell(columnIndex, recordIndex)}
           onDeleteRow={this.onDeleteRow(recordIndex)}
           onAddRow={this.onAddRow(recordIndex)}
           hasMenu={columnIndex === 0}
+          showDrag={columnIndex === 0}
+          onStartDrag={(e) => this.setState({ dragStartIndex: e.target.getAttribute('index') })}
+          onDrop={(e) => this.onRowReorder(e.target.getAttribute('index'))}
           value={filteredRecords[rowIndex - 1][table.columns[columnIndex].name]} />
       </CellMeasurer>
     )
+  }
+
+  onRowReorder = (dragEndIndex) => {
+    const { table, orderRows, id } = this.props;
+    const { dragStartIndex } = this.state;
+
+    orderRows(id, arrayMove(table.rows, dragStartIndex, dragEndIndex));
   }
 
   onDeleteRow = (rowIndex) => () => {
@@ -150,6 +185,23 @@ class VirtualizedTable extends React.Component {
   onAddRow = (index=0) => () => {
     const { id, addRow } = this.props;
     addRow(id, index)
+  }
+
+  onChangeColumnName = (columnIndex) => (newName) => {
+    const { table, id, editCols } = this.props;
+
+    const newCols = table.columns.map((c, i) => {
+      if (i !== columnIndex) {
+        return c;
+      }
+
+      return {
+        ...c,
+        title: newName,
+      }
+    });
+
+    editCols(id, newCols);
   }
 
   onChangeColWidth = (columnIndex) => (diff) => {
@@ -226,6 +278,12 @@ class VirtualizedTable extends React.Component {
     delCol(id, table.columns[colIndex].name);
   }
 
+  onChangeTableName = (newName) => {
+    const { id, editName } = this.props;
+
+    editName(id, newName);
+  }
+
   render() {
     const { table } = this.props;
     const { filteredRecords, cache } = this.state;
@@ -238,7 +296,7 @@ class VirtualizedTable extends React.Component {
     return (
       <div className="v-table">
         <div className="v-table-header">
-          <ManagedEditableText text={table.name} />
+          <ManagedEditableText text={table.name} onChange={(e) => this.onChangeTableName(e.target.value)} />
           <Icon icon="plus" onClick={this.onAddRow(0)} />
           <Icon icon="columns" onClick={this.onAddColumn} />
         </div>
@@ -246,10 +304,10 @@ class VirtualizedTable extends React.Component {
           {
             ({ width, height }) => (
               <MultiGrid
+                useDragHandle
                 headerHeight={30}
                 height={height}
                 width={width}
-                styleTopRightGrid={{ borderBottom: 'solid 1px #cecece' }}
                 fixedRowCount={1}
                 rowCount={totalRecords.length}
                 rowHeight={({index}) => cache.rowHeight({index}) + (index === 0 ? 10 : 0)}
@@ -277,6 +335,8 @@ const mapDispatchToProps = {
   addRow: tableAddRow,
   addCol: tableAddCol,
   delCol: tableDelCol,
+  editName: tableEditName,
+  orderRows: tablesOrderRows,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VirtualizedTable);
