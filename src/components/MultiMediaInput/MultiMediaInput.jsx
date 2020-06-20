@@ -213,7 +213,8 @@ class MultiMediaInput extends React.Component {
       className,
       value,
       disabled,
-      style
+      style,
+      index,
     } = this.props;
 
 
@@ -231,6 +232,7 @@ class MultiMediaInput extends React.Component {
 
     return (
       <ContentEditable
+        index={index}
         style={style}
         disabled={disabled}
         innerRef={this.contentEditable}

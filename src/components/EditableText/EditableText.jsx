@@ -1,7 +1,7 @@
 import React from 'react';
 import Input from 'components/Input';
 
-const EditableText = ({ className, text, placeholder, isEditable=false, onChange=()=>{}, onBlur=()=>{}, onClick=()=>{} }) => {
+const EditableText = ({ className, text, placeholder, isEditable=false, onChange=()=>{}, onBlur=()=>{}, onClick=()=>{}, ...restProps }) => {
   const onKeyDown = (event) => {
     if (event.key === 'Enter') {
       onBlur(event);
@@ -9,11 +9,11 @@ const EditableText = ({ className, text, placeholder, isEditable=false, onChange
   }
 
   if (isEditable) {
-    return <Input className={className} autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeyDown} />
+    return <Input {...restProps} className={className} autoFocus placeholder={placeholder} value={text} onChange={onChange} onBlur={onBlur} onKeyDown={onKeyDown} />
   }
 
   return (
-    <span className={className} onClick={onClick}>
+    <span {...restProps} className={className} onClick={onClick}>
       {text}
     </span>
   );

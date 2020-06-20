@@ -1,6 +1,6 @@
 .v-table {
   width: 100%;
-  height: 800px;
+  height: 760px;
   overflow: hidden;
 
   .v-table-header {
@@ -60,6 +60,13 @@
 
     & > * {
       padding: 10px;
+    }
+  }
+
+  .droppable {
+    background: blue;
+    &:hover {
+      background: green;
     }
   }
 }
