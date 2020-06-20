@@ -44,35 +44,32 @@ const HeaderCell = ({
   onChangeColumnName,
   onColumnDragStart,
   onColumnDragEnd,
-  columnIndex
+  columnName,
 }) => {
   const [dragStart, setDragStart] = useState(null);
 
   return (
     <div
-      index={columnIndex}
       style={style}
       className="v-header-cell"
-      onDrop={e => onColumnDragEnd(e.target.getAttribute('index'))}
+      onDrop={onColumnDragEnd}
       onDragOver={e => e.preventDefault()}
+      id={`drag-column-${columnName}`}
     >
-      <ManagedEditableText index={columnIndex} text={value} className="v-header-text" onChange={(e) => onChangeColumnName(e.target.value)} />
+      <ManagedEditableText text={value} className="v-header-text" onChange={(e) => onChangeColumnName(e.target.value)} />
       {
         deleteable &&
         <Icon
-          index={columnIndex}
           icon="trash"
           onClick={onDeleteColumn}
         />
       }
       <Icon
-        index={columnIndex}
         icon="arrows-alt-h"
         draggable
-        onDragStart={(e) => onColumnDragStart(e.target.getAttribute('index'))}
+        onDragStart={onColumnDragStart}
       />
       <Icon
-        index={columnIndex}
         className="v-header-grip"
         draggable
         icon="grip-lines-vertical"
@@ -80,7 +77,6 @@ const HeaderCell = ({
         onDragEnd={e => onChangeColWidth(e.clientX - dragStart)}
       />
       <Input
-        index={columnIndex}
         className="v-table-filter"
         placeholder="Filter..."
         value={filterValue}
@@ -100,29 +96,29 @@ const DataCell = ({
   showDrag,
   onStartDrag,
   onDrop,
+  columnName,
 }) => {
   const debouncedOnChange = debounce(onChange, 300);
   return (
     <div
-      {...(showDrag ? { id: `drag-${index}`} : {})}
+      {...(showDrag ? { id: `drag-${index}-${columnName}`} : {})}
       index={index}
       style={style}
       className={"v-data-cell"}
       onDrop={onDrop}
       onDragOver={e => e.preventDefault()}
     >
-      { showDrag && <Icon index={index} icon="grip-lines" draggable onDragStart={onStartDrag} /> }
+      { showDrag && <Icon icon="grip-lines" draggable onDragStart={onStartDrag} /> }
       {
         hasMenu &&
           <Popover options={[
             { text: 'Delete Row', icon: 'trash-alt', onClick: () => onDeleteRow() },
             { text: 'Add Row Above', icon: 'plus', onClick: () => onAddRow() }
           ]}>
-            <Icon index={index} className="menu" icon="ellipsis-v" />
+            <Icon className="menu" icon="ellipsis-v" />
           </Popover>
       }
       <MultiMediaInput
-        index={index}
         value={value}
         onChange={(e) => debouncedOnChange(e.target.value)}
       />
@@ -170,8 +166,12 @@ class VirtualizedTable extends React.Component {
             onChangeFilters={this.onSetFilters(table.columns[columnIndex].name)}
             filterValue={filters[table.columns[columnIndex].name]}
             onChangeColumnName={this.onChangeColumnName(columnIndex)}
-            onColumnDragStart={(index) => this.setState({ columnDragStartIndex: index })}
-            onColumnDragEnd={this.onColumnReorder}
+            columnName={table.columns[columnIndex].name}
+            onColumnDragStart={((index, cName) => (e) => {
+              e.dataTransfer.setDragImage(document.getElementById(`drag-column-${cName}`), 0, 0)
+              this.setState({ columnDragStartIndex: index });
+            })(columnIndex, table.columns[columnIndex].name)}
+            onColumnDragEnd={this.onColumnReorder(columnIndex)}
             columnIndex={columnIndex}
           />
         </CellMeasurer>
@@ -197,31 +197,32 @@ class VirtualizedTable extends React.Component {
           onAddRow={this.onAddRow(recordIndex)}
           hasMenu={columnIndex === 0}
           showDrag={columnIndex === 0}
-          onStartDrag={((i) => (e) => {
-            e.dataTransfer.setDragImage(document.getElementById(`drag-${i}`), 0, 0)
-            this.setState({ dragStartIndex: e.target.getAttribute('index')})
-          })(recordIndex)}
-          onDrop={(e) => this.onRowReorder(e.target.getAttribute('index'))}
+          columnName={table.columns[columnIndex].name}
+          onStartDrag={((i, cName) => (e) => {
+            e.dataTransfer.setDragImage(document.getElementById(`drag-${i}-${cName}`), 0, 0)
+            this.setState({ dragStartIndex: i})
+          })(recordIndex, table.columns[columnIndex].name)}
+          onDrop={this.onRowReorder(recordIndex)}
           value={filteredRecords[rowIndex - 1][table.columns[columnIndex].name]} />
       </CellMeasurer>
     )
   }
 
-  onColumnReorder = (columnDragEndIndex) => {
+  onColumnReorder = (columnDragEndIndex) => () => {
     const { table, id, editCols } = this.props;
     const { columnDragStartIndex } = this.state;
 
-    if (columnDragStartIndex) {
+    if (columnDragStartIndex !== null) {
       editCols(id, arrayMove(table.columns, columnDragStartIndex, columnDragEndIndex));
       this.setState({ columnDragStartIndex: null });
     }
   }
 
-  onRowReorder = (dragEndIndex) => {
+  onRowReorder = (dragEndIndex) => () => {
     const { table, orderRows, id } = this.props;
     const { dragStartIndex } = this.state;
 
-    if (dragStartIndex) {
+    if (dragStartIndex !== null) {
       orderRows(id, arrayMove(table.rows, dragStartIndex, dragEndIndex));
       this.setState({ dragStartIndex: null })
     }
@@ -338,6 +339,10 @@ class VirtualizedTable extends React.Component {
   render() {
     const { table } = this.props;
     const { filteredRecords, cache } = this.state;
+
+    if (!table) {
+      return <div>The selected table does not exist</div>
+    }
 
     cache.clearAll();
 

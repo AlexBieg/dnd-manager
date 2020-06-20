@@ -1,6 +1,6 @@
 import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
-import { omit } from 'lodash';
+import { omit, get } from 'lodash';
 
 const diceRegexGlobal = /(^|\s|\()+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?(\))?/g;
 
@@ -23,7 +23,7 @@ export const getTableById = (id) => createSelector(
 export const getRecordsByTableId = (id) => createSelector(
   getTableById(id),
   getRecords,
-  (table, records) => table.rows.map(r => records[r])
+  (table, records) => get(table, 'rows', []).map(r => records[r])
 )
 
 // Actions

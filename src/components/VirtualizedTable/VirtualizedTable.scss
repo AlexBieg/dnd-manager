@@ -63,6 +63,7 @@
     border-right: 1px solid #cecece;
     display: flex;
     align-items: baseline;
+    overflow: hidden;
 
     & > * {
       padding: 10px;

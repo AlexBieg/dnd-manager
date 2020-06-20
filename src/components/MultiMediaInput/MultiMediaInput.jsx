@@ -217,6 +217,13 @@ class MultiMediaInput extends React.Component {
       index,
     } = this.props;
 
+    // try {
+    //   const url = new URL(value);
+
+    //   return <img alt="" className="image" src={value} />;
+    // } catch (e) {
+    // }
+
 
     const tableMatch = (value).match(tableRegex);
 
