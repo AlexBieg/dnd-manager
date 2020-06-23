@@ -44,6 +44,7 @@ const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
 // Action Creators
 export const tablesImportTable = (data, name, idColumnIndex) => {
   const idColumnId = uuidV4();
+  const tableId = uuidV4();
 
   const columns = data[0].map((c, i) => ({
     name: (i === idColumnIndex ? idColumnId : uuidV4()),
@@ -61,6 +62,7 @@ export const tablesImportTable = (data, name, idColumnIndex) => {
     const dataRow = data[i];
     records[rId] = {
       __id: rId,
+      __tableId: tableId,
       name: dataRow[idColumnIndex],
       ...dataRow.reduce((acc, colVal, dataIndex) => {
         const diceMatches = [...colVal.matchAll(diceRegexGlobal)];
@@ -95,7 +97,7 @@ export const tablesImportTable = (data, name, idColumnIndex) => {
   return {
     type: TABLES_IMPORT_TABLE,
     data: {
-      tableId: uuidV4(),
+      tableId,
       table,
       records,
     },
@@ -217,6 +219,7 @@ export const tableEditCols = (id, cols) => {
 const INITIAL_STATE = {
   tables: {},
   records: {},
+  activeRecord: null,
 };
 
 // Reducer
@@ -289,7 +292,10 @@ const tables = (state=INITIAL_STATE, { type, data }) => {
         ...state,
         records: {
           ...state.records,
-          [id]: { __id: id },
+          [id]: {
+            __id: id,
+            __tableId: data.id
+          },
         },
         tables: {
           ...state.tables,

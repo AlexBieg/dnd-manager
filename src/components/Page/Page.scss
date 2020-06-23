@@ -28,28 +28,22 @@
     display: flex;
     align-items: baseline;
 
-    &:hover {
-      .menu, .grip {
-        opacity: 1;
-      }
-
-      .media-input {
-        border-left: #cecece 1px solid;
-      }
-    }
-
     .grip, .menu {
-      opacity: 0;
       color: #cecece;
+
+      &:hover {
+        color: black;
+        cursor: pointer;
+      }
     }
 
     .menu {
       padding: 0px 10px;
     }
 
-    .media-input {
+    .editor {
       flex: 1;
-      border-left: rgba($color: #000000, $alpha: 0) 1px solid;
+      border-left: #cecece 1px solid;
       padding: 2px 10px;;
     }
   }

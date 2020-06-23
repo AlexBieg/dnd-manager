@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getPages, pagesEditPage } from 'reducers/pages';
 import MultiMediaInput from 'components/MultiMediaInput';
+import Editor from 'components/Editor';
+import { v4 as uuidV4 } from 'uuid';
 import Popover from 'react-tiny-popover';
 import PopoverMenu from 'components/PopoverMenu';
 import Icon from 'components/Icon';
@@ -15,9 +17,12 @@ const Page = ({ pageId }) => {
   const [focusRow, setFocusRow] = useState(null);
   const [menuOpen, setMenuOpen] = useState([]);
 
-  const onChangeContent = (index) => (event) => {
+  const onChangeContent = (index) => (content) => {
     const newContent = [...page.content];
-    newContent[index] = event.target.value;
+    newContent[index] = {
+      ...newContent[index],
+      content
+    };
     dispatch(pagesEditPage(pageId, {
       ...page,
       content: newContent,
@@ -36,35 +41,22 @@ const Page = ({ pageId }) => {
     setFocusRow(null);
   }
 
-  const onKeyDown = (index) => (event, isEmpty) => {
-    if (event.key === 'Enter' && event.shiftKey) {
-      const newContent = [...page.content];
-      newContent.splice(index + 1, 0, '');
-      dispatch(pagesEditPage(pageId, {
-        ...page,
-        content: newContent,
-      }));
-      setFocusRow(index + 1);
-    }
-
-    if (event.key === 'Backspace' && isEmpty) {
-      onDeleteContent(index);
-      setFocusRow(index - 1);
-      event.preventDefault();
-      event.stopPropagation();
-    }
+  const handleNext = (index) => () => {
+    const newContent = [...page.content];
+    newContent.splice(index + 1, 0, { id: uuidV4(), content: null });
+    dispatch(pagesEditPage(pageId, {
+      ...page,
+      content: newContent,
+    }));
+    setFocusRow(index + 1);
   }
 
   const onAddContent = () => {
-    if (page.content.length === 0 || page.content[page.content.length - 1].length > 0) {
-      setFocusRow(page.content.length);
-      dispatch(pagesEditPage(pageId, {
-        ...page,
-        content: [...page.content, ''],
-      }));
-    } else {
-      setFocusRow(page.content.length - 1);
-    }
+    setFocusRow(page.content.length);
+    dispatch(pagesEditPage(pageId, {
+      ...page,
+      content: [...page.content, { id: uuidV4(), content: null }],
+    }));
   }
 
   const onDeleteContent = (index) => {
@@ -117,7 +109,7 @@ const Page = ({ pageId }) => {
               ref={provided.innerRef}
             >
               {page.content.map((c, i) => (
-                <Draggable key={i} draggableId={`${i}`} index={i}>
+                <Draggable key={c.id} draggableId={c.id} index={i}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
@@ -133,14 +125,12 @@ const Page = ({ pageId }) => {
                       >
                         <Icon className="menu" icon="ellipsis-v" onClick={onOpenMenu(i)}/>
                       </Popover>
-                      <MultiMediaInput
-                        onChange={onChangeContent(i)}
+                      <Editor
+                        onNext={handleNext(i)}
+                        value={c.content}
                         onFocus={onFocus(i)}
-                        onKeyDown={onKeyDown(i)}
-                        className="media-input"
-                        value={c}
                         focus={i === focusRow}
-                      />
+                        onChange={onChangeContent(i)} />
                     </div>
                   )}
                 </Draggable>

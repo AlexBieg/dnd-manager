@@ -307,6 +307,7 @@ class VirtualizedTable extends React.Component {
     }
 
     if (filters !== prevState.filters || records !== prevProps.records) {
+      cache.clearAll();
       const filteredRecords = records.filter((r) => Object.entries(filters).every(([cName, term]) => get(r, cName, '').toLowerCase().includes(term.toLowerCase())));
       this.setState({ filteredRecords });
     }
@@ -343,8 +344,6 @@ class VirtualizedTable extends React.Component {
     if (!table) {
       return <div>The selected table does not exist</div>
     }
-
-    cache.clearAll();
 
     // add a record for the header row
     const totalRecords = [{}, ...filteredRecords];

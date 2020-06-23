@@ -32,6 +32,8 @@
     "redux": "^4.0.5",
     "redux-logger": "^3.0.6",
     "reselect": "^4.0.0",
+    "slate": "^0.58.3",
+    "slate-react": "^0.58.3",
     "uuid": "^8.1.0"
   },
   "scripts": {
