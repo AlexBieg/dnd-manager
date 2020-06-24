@@ -4,7 +4,7 @@ import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import classNames from 'classnames';
 import { connect } from 'react-redux';
 import fuzzysort from 'fuzzysort';
-import { getRecords } from 'reducers/tables';
+import { getRecords, tablesSetActiveRecord } from 'reducers/tables';
 import { getPages, pagesSetActivePage, getActivePageId } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 
@@ -143,6 +143,7 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
   element,
   setPage,
   rollDice,
+  setActiveRecord,
 }) => {
   switch (element.type) {
     case 'h1':
@@ -163,7 +164,7 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
       return <div className="quote" {...attributes}>{children}</div>
     case 'record':
       return (
-        <span className="record" contentEditable={false} {...attributes} onClick={() => console.log(element.record.__id)}>
+        <span className="record" contentEditable={false} {...attributes} onClick={() => setActiveRecord(element.record.__id)}>
           {element.record.name}
           {children}
         </span>
@@ -190,6 +191,7 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
 class CustomEditor extends Component {
   static defaultProps = {
     onBlur: () => {},
+    onChange: () => {},
   }
 
   constructor(props) {
@@ -200,7 +202,7 @@ class CustomEditor extends Component {
   }
 
   renderElement = (props) => {
-    return <Element {...props} />
+    return <Element {...props} setActiveRecord={this.props.setActiveRecord}/>
   }
 
   renderLeaf = (props) => {
@@ -379,7 +381,7 @@ class CustomEditor extends Component {
   }
 
   render() {
-    const { value, onBlur } = this.props;
+    const { value, onBlur, className } = this.props;
     const { editor } = this.state;
 
 
@@ -394,7 +396,7 @@ class CustomEditor extends Component {
     }
 
     return (
-      <div className="editor">
+      <div className={classNames('editor', className)}>
         <Slate editor={editor} value={stringVal || emptyVal || value } onChange={this.onChange}>
           <Editable
             renderElement={this.renderElement}
@@ -414,4 +416,9 @@ const mapStateToProps = (state) => ({
   pageId: getActivePageId(state),
 });
 
-export default connect(mapStateToProps)(CustomEditor);
+
+const mapDispatchToProps = {
+  setActiveRecord: tablesSetActiveRecord,
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(CustomEditor);

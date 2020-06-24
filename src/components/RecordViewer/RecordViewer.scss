@@ -1,0 +1,43 @@
+.record-viewer-overlay {
+  opacity: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.record-viewer-modal {
+  position: absolute;
+  top: 40px;
+  left: 400px;
+  right: 400px;
+  bottom: 40px;
+  border: 1px solid rgb(204, 204, 204);
+  background: rgb(255, 255, 255);
+  overflow: auto;
+  border-radius: 4px;
+  outline: none;
+  padding: 20px;
+}
+
+.record-viewer {
+  .row {
+    display: flex;
+
+    .title {
+      flex: 1;
+      font-weight: bold;
+    }
+
+    .value {
+      flex: 6;
+      word-break: break-word;
+    }
+
+    .value, .title {
+      padding: 10px;
+      border-bottom: 1px solid #ececec;
+    }
+  }
+}

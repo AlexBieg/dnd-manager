@@ -2,8 +2,6 @@ import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
 import { omit, get } from 'lodash';
 
-const diceRegexGlobal = /(^|\s|\()+(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?(\))?/g;
-
 // Selectors
 export const getTablesSection = (state) => state.tables;
 export const getTables = createSelector(
@@ -26,6 +24,16 @@ export const getRecordsByTableId = (id) => createSelector(
   (table, records) => get(table, 'rows', []).map(r => records[r])
 )
 
+export const getActiveRecord = createSelector(
+  getTablesSection,
+  (tables) => tables.activeRecord,
+);
+
+export const getRecordById = (id) => createSelector(
+  getRecords,
+  (records) => records[id],
+)
+
 // Actions
 const TABLES_ADD_ROW = 'TABLES_ADD_ROW';
 const TABLES_DEL_ROW = 'TABLES_DEL_ROW';
@@ -41,7 +49,16 @@ const TABLES_CREATE_TABLE = 'TABLES_CREATE_TABLE';
 const TABLES_DELETE_TABLE = 'TABLES_DELETE_TABLE';
 const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
 
+const TABLES_SET_ACTIVE_RECORD = 'TABLES_SET_ACTIVE_RECORD';
+
 // Action Creators
+export const tablesSetActiveRecord = (id) => {
+  return {
+    type: TABLES_SET_ACTIVE_RECORD,
+    data: id,
+  }
+}
+
 export const tablesImportTable = (data, name, idColumnIndex) => {
   const idColumnId = uuidV4();
   const tableId = uuidV4();
@@ -191,6 +208,11 @@ const INITIAL_STATE = {
 const tables = (state=INITIAL_STATE, { type, data }) => {
   let rows;
   switch (type) {
+    case TABLES_SET_ACTIVE_RECORD:
+      return {
+        ...state,
+        activeRecord: data,
+      }
     case TABLES_IMPORT_TABLE:
       return {
         ...state,

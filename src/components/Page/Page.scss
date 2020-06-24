@@ -44,7 +44,12 @@
     .editor {
       flex: 1;
       border-left: #cecece 1px solid;
-      padding: 10px;;
+      padding: 2px 10px;;
+    }
+
+    .v-table {
+      border-left: #cecece 1px solid;
+      padding: 2px 10px;;
     }
   }
 }

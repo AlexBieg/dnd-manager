@@ -31,7 +31,7 @@ const Importer = () => {
   return (
     <div className="importer">
       <Button value="Import CSV" onClick={() => setModalIsOpen(true)} />
-      <Modal isOpen={modalIsOpen}>
+      <Modal isOpen={modalIsOpen} onRequestClose={() => setModalIsOpen(false)}>
         <CSVReader onFileLoaded={(data, fileInfo) => onAddFile(data, fileInfo)} />
         <select value={idColumnIndex} name="col" onChange={e => setIdColumnIndex(e.target.value)}>
           {

@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { connect } from 'react-redux';
-import {
-  get,
-  debounce,
-} from 'lodash';
 import { arrayMove } from 'react-sortable-hoc';
+import { debounce } from 'lodash';
 import {
   MultiGrid,
   AutoSizer,
@@ -23,7 +20,7 @@ import {
   tableEditName,
   tablesOrderRows,
 } from 'reducers/tables';
-import MultiMediaInput from 'components/MultiMediaInput';
+import { Node } from 'slate'
 import Editor from 'components/Editor';
 import ManagedEditableText from 'components/ManagedEditableText';
 import Icon from 'components/Icon';
@@ -140,19 +137,21 @@ class VirtualizedTable extends React.Component {
 
     this.state = {
       filters: {},
+      filteredRecords: props.records,
       dragStartIndex: null,
+      outerHeight: 760,
       columnDragStartIndex: null,
       cache: new CellMeasurerCache({
         defaultWidth: 150,
-        defaultHeight: 39,
+        defaultHeight: 100,
         fixedWidth: true,
       })
     }
   }
 
   onRenderCell = ({ columnIndex, rowIndex, key, style, parent }) => {
-    const { table, records } = this.props;
-    const { filters, cache } = this.state;
+    const { table } = this.props;
+    const { filters, cache, filteredRecords } = this.state;
 
 
     if (rowIndex === 0) {
@@ -191,7 +190,7 @@ class VirtualizedTable extends React.Component {
     return (
       <CellMeasurer
         cache={cache}
-        key={key}
+        key={`${key}-${filteredRecords[rowIndex - 1].__id}`}
         columnIndex={columnIndex}
         parent={parent}
         rowIndex={rowIndex}
@@ -210,7 +209,7 @@ class VirtualizedTable extends React.Component {
             this.setState({ dragStartIndex: i})
           })(recordIndex, table.columns[columnIndex].name)}
           onDrop={this.onRowReorder(recordIndex)}
-          value={records[rowIndex - 1][table.columns[columnIndex].name]} />
+          value={filteredRecords[rowIndex - 1][table.columns[columnIndex].name]} />
       </CellMeasurer>
     )
   }
@@ -281,23 +280,56 @@ class VirtualizedTable extends React.Component {
   }
 
   onEditCell = (columnIndex, rowIndex) => (value) => {
-    const { editRow, id, table, records } = this.props;
+    const { editRow, id, table } = this.props;
+    const { filteredRecords } = this.state;
     const rowChanges = {
       [table.columns[columnIndex].name]: value,
     }
 
-    editRow(id, records[rowIndex].__id, rowChanges)
+    editRow(id, filteredRecords[rowIndex].__id, rowChanges)
+  }
+
+  getFilteredRecordsFromFilters = (records, filters) => {
+    return records.filter((r) => {
+      return Object.entries(filters).every(([cName, term]) => {
+        let text;
+        if (typeof r[cName] === 'object') {
+          text = r[cName].map(n => Node.string(n))[0];
+        } else {
+          text = r[cName];
+        }
+        return (text || '').toLowerCase().includes(term.toLowerCase());
+      });
+    });
   }
 
   onSetFilters = (columnName) => (term) => {
-    const { filters } = this.state;
+    const { records } = this.props;
+    const { filters, cache } = this.state;
     const newFilters = {
       ...filters,
       [columnName]: term,
     };
 
+    const filteredRecords = this.getFilteredRecordsFromFilters(records, newFilters);
+
+    const totalRowHeights = filteredRecords.reduce((acc, r, i) => acc + cache.rowHeight({ index: i }), 0);
+    const outerHeight = Math.max(300, Math.min(totalRowHeights + 70, 760));
+
     this.setState({
-      filters: newFilters
+      filters: newFilters,
+      filteredRecords,
+      outerHeight,
+    })
+  }
+
+  componentDidMount() {
+    const { filteredRecords, cache } = this.state;
+    const totalRowHeights = filteredRecords.reduce((acc, r, i) => acc + cache.rowHeight({ index: i }), 0);
+    const outerHeight = Math.max(300, Math.min(totalRowHeights + 70, 760));
+
+    this.setState({
+      outerHeight,
     })
   }
 
@@ -335,21 +367,18 @@ class VirtualizedTable extends React.Component {
   }
 
   render() {
-    const { table, records } = this.props;
-    const { cache } = this.state;
+    const { table } = this.props;
+    const { cache, filteredRecords, outerHeight } = this.state;
 
     if (!table) {
       return <div>The selected table does not exist</div>
     }
 
-    // add a record for the header row
-    const totalRecords = [{}, ...records];
+    const totalRecords = [{}, ...filteredRecords];
 
-    const totalHeight = totalRecords.length < 15 ? totalRecords.reduce((acc, _, i) => acc + cache.rowHeight(i), 0) : 1000;
-    const outerHeight = Math.min(totalHeight + 70, 760);
 
     return (
-      <div className="v-table" style={{ height: outerHeight}}>
+      <div className="v-table" style={{ height: outerHeight }}>
         <div className="v-table-header">
           <ManagedEditableText text={table.name} onChange={(e) => this.onChangeTableName(e.target.value)} />
           <Icon icon="plus" onClick={this.onAddRow(0)} />

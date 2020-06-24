@@ -8,6 +8,7 @@ import PopoverMenu from 'components/PopoverMenu';
 import Icon from 'components/Icon';
 import TableSelector from 'components/TableSelector';
 import Table from 'components/VirtualizedTable';
+import RecordViewer from 'components/RecordViewer';
 import { useSelector, useDispatch } from 'react-redux';
 
 import './Page.scss';
@@ -135,6 +136,7 @@ const Page = ({ pageId }) => {
 
   return (
     <div className="page" id="page">
+      <RecordViewer />
       <div className="page-header">{page.name}</div>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable className="page-content" droppableId="content">

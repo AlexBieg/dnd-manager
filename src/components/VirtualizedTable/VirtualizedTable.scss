@@ -1,6 +1,7 @@
 .v-table {
   width: 100%;
   overflow: hidden;
+  height: 780px;
   display: flex;
   flex-direction: column;
 
@@ -72,6 +73,7 @@
 
     .editor {
       border-left: 0px;
+      padding-top: 10px;
     }
 
     & > * {
