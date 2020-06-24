@@ -1,12 +1,17 @@
 .v-table {
   width: 100%;
-  // height: 760px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 
   .v-table-grid {
     flex: 1 1 auto;
+
+    .v-data-cell {
+      .editor {
+        border-left: 0px;
+      }
+    }
   }
 
   .v-table-header {
@@ -64,6 +69,10 @@
     display: flex;
     align-items: baseline;
     overflow: hidden;
+
+    .editor {
+      border-left: 0px;
+    }
 
     & > * {
       padding: 10px;

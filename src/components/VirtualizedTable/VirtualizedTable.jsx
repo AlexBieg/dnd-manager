@@ -24,6 +24,7 @@ import {
   tablesOrderRows,
 } from 'reducers/tables';
 import MultiMediaInput from 'components/MultiMediaInput';
+import Editor from 'components/Editor';
 import ManagedEditableText from 'components/ManagedEditableText';
 import Icon from 'components/Icon';
 import Input from 'components/Input';
@@ -98,7 +99,13 @@ const DataCell = ({
   onDrop,
   columnName,
 }) => {
-  const debouncedOnChange = debounce(onChange, 300);
+  const [innerVal, setInnerVal] = useState(value);
+
+  const onChangeInner = (val) => {
+    setInnerVal(val);
+  }
+
+
   return (
     <div
       {...(showDrag ? { id: `drag-${index}-${columnName}`} : {})}
@@ -118,9 +125,10 @@ const DataCell = ({
             <Icon className="menu" icon="ellipsis-v" />
           </Popover>
       }
-      <MultiMediaInput
-        value={value}
-        onChange={(e) => debouncedOnChange(e.target.value)}
+      <Editor
+        value={innerVal}
+        onChange={onChangeInner}
+        onBlur={() => onChange(innerVal)}
       />
     </div>
   );
@@ -132,7 +140,6 @@ class VirtualizedTable extends React.Component {
 
     this.state = {
       filters: {},
-      filteredRecords: props.records,
       dragStartIndex: null,
       columnDragStartIndex: null,
       cache: new CellMeasurerCache({
@@ -144,8 +151,8 @@ class VirtualizedTable extends React.Component {
   }
 
   onRenderCell = ({ columnIndex, rowIndex, key, style, parent }) => {
-    const { table } = this.props;
-    const { filteredRecords, filters, cache } = this.state;
+    const { table, records } = this.props;
+    const { filters, cache } = this.state;
 
 
     if (rowIndex === 0) {
@@ -203,7 +210,7 @@ class VirtualizedTable extends React.Component {
             this.setState({ dragStartIndex: i})
           })(recordIndex, table.columns[columnIndex].name)}
           onDrop={this.onRowReorder(recordIndex)}
-          value={filteredRecords[rowIndex - 1][table.columns[columnIndex].name]} />
+          value={records[rowIndex - 1][table.columns[columnIndex].name]} />
       </CellMeasurer>
     )
   }
@@ -274,13 +281,12 @@ class VirtualizedTable extends React.Component {
   }
 
   onEditCell = (columnIndex, rowIndex) => (value) => {
-    const { editRow, id, table } = this.props;
-    const { filteredRecords } = this.state;
+    const { editRow, id, table, records } = this.props;
     const rowChanges = {
       [table.columns[columnIndex].name]: value,
     }
 
-    editRow(id, filteredRecords[rowIndex].__id, rowChanges)
+    editRow(id, records[rowIndex].__id, rowChanges)
   }
 
   onSetFilters = (columnName) => (term) => {
@@ -296,7 +302,7 @@ class VirtualizedTable extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const { id, table, records } = this.props;
+    const { table, records } = this.props;
     const { filters, cache } = this.state;
     const prevWidth = prevProps.table.columns.reduce((acc, c) => acc + c.width, 0);
     const newWidth = table.columns.reduce((acc, c) => acc + c.width, 0);
@@ -308,15 +314,6 @@ class VirtualizedTable extends React.Component {
 
     if (filters !== prevState.filters || records !== prevProps.records) {
       cache.clearAll();
-      const filteredRecords = records.filter((r) => Object.entries(filters).every(([cName, term]) => get(r, cName, '').toLowerCase().includes(term.toLowerCase())));
-      this.setState({ filteredRecords });
-    }
-
-    if (id !== prevProps.id) {
-      this.setState({
-        filters: [],
-        filteredRecords: records,
-      })
     }
   }
 
@@ -338,15 +335,15 @@ class VirtualizedTable extends React.Component {
   }
 
   render() {
-    const { table } = this.props;
-    const { filteredRecords, cache } = this.state;
+    const { table, records } = this.props;
+    const { cache } = this.state;
 
     if (!table) {
       return <div>The selected table does not exist</div>
     }
 
     // add a record for the header row
-    const totalRecords = [{}, ...filteredRecords];
+    const totalRecords = [{}, ...records];
 
     const totalHeight = totalRecords.length < 15 ? totalRecords.reduce((acc, _, i) => acc + cache.rowHeight(i), 0) : 1000;
     const outerHeight = Math.min(totalHeight + 70, 760);

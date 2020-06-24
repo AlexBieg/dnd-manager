@@ -49,7 +49,7 @@ export const tablesImportTable = (data, name, idColumnIndex) => {
   const columns = data[0].map((c, i) => ({
     name: (i === idColumnIndex ? idColumnId : uuidV4()),
     title: c,
-    width: 80,
+    width: 160,
   }));
 
   const rows = [];
@@ -65,22 +65,6 @@ export const tablesImportTable = (data, name, idColumnIndex) => {
       __tableId: tableId,
       name: dataRow[idColumnIndex],
       ...dataRow.reduce((acc, colVal, dataIndex) => {
-        const diceMatches = [...colVal.matchAll(diceRegexGlobal)];
-
-        if (diceMatches.length) {
-
-          let newValue = colVal;
-
-          diceMatches.forEach((matchList) => {
-            const match = matchList[0];
-            const fixedMatch = match.replace(/(\s|\(|\))*/g, '');
-            newValue = newValue.replace(match, ` <a href="#" class="dice">${fixedMatch}</a> `);
-          });
-
-          acc[columns[dataIndex].name] = newValue;
-          return acc;
-        }
-
         acc[columns[dataIndex].name] = colVal;
         return acc;
       }, {})
@@ -158,32 +142,13 @@ export const tableDelRow = (tableId, rowId) => {
 };
 
 export const tableEditRow = (tableId, rowId, rowChanges) => {
-  const fixedRowChanges = Object.entries(rowChanges).reduce((acc, [colId, val]) => {
-    const diceMatches = [...val.matchAll(diceRegexGlobal)];
-    if (diceMatches.length) {
-
-      let newValue = val;
-
-      diceMatches.forEach((matchList) => {
-        const match = matchList[0];
-        const fixedMatch = match.replace(/(\s|\(|\))*/g, '');
-        newValue = newValue.replace(match, ` <a href="#" class="dice">${fixedMatch}</a> `);
-      });
-
-      acc[colId] = newValue;
-    } else {
-      acc[colId] = val;
-    }
-
-    return acc;
-  }, {});
 
   return {
     type: TABLES_EDIT_ROW,
     data: {
       tableId,
       rowId,
-      rowChanges: fixedRowChanges,
+      rowChanges,
     }
   }
 }

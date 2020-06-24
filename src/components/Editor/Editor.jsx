@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-import { createEditor, Transforms, Editor, Text, Range } from 'slate'
-import { Slate, Editable, withReact } from 'slate-react'
+import { createEditor, Transforms, Editor, Text, Range, Node } from 'slate'
+import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import classNames from 'classnames';
 import { connect } from 'react-redux';
 import fuzzysort from 'fuzzysort';
@@ -19,7 +19,21 @@ const INLINE_MATCHES = [
     dataProp: 'record',
     regex: /^@([a-zA-Z0-9]+)$/,
     searchKey: 'name',
-    getData: ({ records }) => Object.values(records),
+    getData: ({ records }) => {
+      return Object.values(records).map(r => {
+        let name;
+        if (typeof r.name === 'object') {
+          name = r.name.map(n => Node.string(n))[0];
+        } else {
+          name = r.name;
+        }
+
+        return {
+          ...r,
+          name,
+        }
+      });
+    },
     stateKey: 'recordMatches',
   },
   {
@@ -174,6 +188,10 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
 });
 
 class CustomEditor extends Component {
+  static defaultProps = {
+    onBlur: () => {},
+  }
+
   constructor(props) {
     super(props);
     this.state = {
@@ -345,17 +363,44 @@ class CustomEditor extends Component {
     }
   }
 
+  handleBlur = () => {
+    if (ReactEditor.isFocused(this.state.editor)) {
+      this.props.onBlur();
+    }
+  }
+
+  componentDidMount() {
+    window.addEventListener('beforeunload', this.handleBlur);
+  }
+
+  componentWillUnmount() {
+    this.handleBlur();
+    window.removeEventListener('beforeunload', this.handleBlur);
+  }
+
   render() {
-    const { value } = this.props;
+    const { value, onBlur } = this.props;
     const { editor } = this.state;
+
+
+    let stringVal;
+    if (typeof value === 'string') {
+      stringVal = [{ children: [{ text: value}]}]
+    }
+
+    let emptyVal;
+    if (!value) {
+      stringVal = [{ children: [{ text: ''}]}]
+    }
 
     return (
       <div className="editor">
-        <Slate editor={editor} value={value || [{ children: [{ text: ''}]}]} onChange={this.onChange} onBlur={(e) => console.log(e)}>
+        <Slate editor={editor} value={stringVal || emptyVal || value } onChange={this.onChange}>
           <Editable
             renderElement={this.renderElement}
             renderLeaf={this.renderLeaf}
             onKeyDown={this.onKeyDown}
+            onBlur={onBlur}
           />
         </Slate>
       </div>

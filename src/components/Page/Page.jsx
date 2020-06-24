@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { getPages, pagesEditPage } from 'reducers/pages';
-import MultiMediaInput from 'components/MultiMediaInput';
 import Editor from 'components/Editor';
 import { v4 as uuidV4 } from 'uuid';
 import Popover from 'react-tiny-popover';
 import PopoverMenu from 'components/PopoverMenu';
 import Icon from 'components/Icon';
+import TableSelector from 'components/TableSelector';
+import Table from 'components/VirtualizedTable';
 import { useSelector, useDispatch } from 'react-redux';
 
 import './Page.scss';
+
+const tableIdRegex = /^@@([a-zA-Z0-9-]+)@@$/;
 
 const Page = ({ pageId }) => {
   const page = useSelector(getPages)[pageId];
@@ -68,6 +71,30 @@ const Page = ({ pageId }) => {
     }));
   }
 
+  const onAddTable = (i) => {
+    const newContent = [...page.content];
+    newContent[i] = {
+      ...newContent[i],
+      content: 'select_table'
+    };
+    dispatch(pagesEditPage(pageId, {
+      ...page,
+      content: newContent,
+    }))
+  }
+
+  const onChooseTable = (i) => (id) => {
+    const newContent = [...page.content];
+    newContent[i] = {
+      ...newContent[i],
+      content: `@@${id}@@`
+    };
+    dispatch(pagesEditPage(pageId, {
+      ...page,
+      content: newContent,
+    }))
+  }
+
   const getMenuOptions = (index) => {
     return [
       {
@@ -77,6 +104,14 @@ const Page = ({ pageId }) => {
           onDeleteContent(index);
           onCloseMenu(index)();
         })(index)
+      },
+      {
+        text: 'Add Table',
+        icon: 'columns',
+        onClick: ((i) => () => {
+          onAddTable(i);
+          onCloseMenu(i)();
+        })(index),
       }
     ];
   };
@@ -125,12 +160,24 @@ const Page = ({ pageId }) => {
                       >
                         <Icon className="menu" icon="ellipsis-v" onClick={onOpenMenu(i)}/>
                       </Popover>
-                      <Editor
-                        onNext={handleNext(i)}
-                        value={c.content}
-                        onFocus={onFocus(i)}
-                        focus={i === focusRow}
-                        onChange={onChangeContent(i)} />
+                      {
+                        c.content === 'select_table' &&
+                        <TableSelector onChange={onChooseTable(i)} />
+                      }
+                      {
+                        typeof c.content === 'string' && c.content.match(tableIdRegex) != null &&
+                        <Table id={c.content.match(tableIdRegex)[1]} />
+                      }
+                      {
+                        typeof c.content !== 'string' &&
+                        <Editor
+                          onNext={handleNext(i)}
+                          value={c.content}
+                          onFocus={onFocus(i)}
+                          focus={i === focusRow}
+                          onChange={onChangeContent(i)} />
+                      }
+
                     </div>
                   )}
                 </Draggable>
