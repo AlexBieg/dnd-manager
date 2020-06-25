@@ -34,12 +34,12 @@
         background: #cecece;
         cursor: pointer;
 
-        .menu, .add-subpage {
+        .menu, .add-subpage, .grip {
           opacity: 1;
         }
       }
 
-      .menu, .add-subpage {
+      .menu, .add-subpage, .grip {
         opacity: 0;
         color: #a0a0a0;
       }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Modal from 'react-modal';
 import { useSelector, useDispatch } from 'react-redux';
 import { tableEditRow, tablesSetActiveRecord, getActiveRecord, getRecordById, getTableById } from 'reducers/tables';
@@ -15,10 +15,6 @@ const RecordViewer = () => {
   const [currentRecord, setCurrentRecord] = useState(record);
   const dispatch = useDispatch();
 
-  // useEffect(() => {
-  //   setCurrentRecord(record);
-  // }, [record, record.__id]);
-
   if (currentRecord.__id !== record.__id) {
     setCurrentRecord(record);
   }
@@ -30,8 +26,6 @@ const RecordViewer = () => {
   const handleChange = (cName) => (newVal) => {
     setCurrentRecord({ ...currentRecord, [cName]: newVal });
   }
-
-  console.log(record, currentRecord);
 
   return (
     <Modal
