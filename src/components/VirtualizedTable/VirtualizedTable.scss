@@ -1,16 +1,36 @@
 .v-table {
   width: 100%;
   overflow: hidden;
-  height: 780px;
   display: flex;
   flex-direction: column;
+  max-height: 780px;
+  overflow-y: scroll;
 
   .v-table-grid {
     flex: 1 1 auto;
+    overflow: scroll;
+    display: flex;
 
-    .v-data-cell {
-      .editor {
-        border-left: 0px;
+    table {
+      flex: 1;
+      border: none;
+
+      tr {
+        th {
+          border-bottom: 1px solid #cecece;
+          text-align: left;
+          position: sticky;
+          top: 0;
+        }
+        td {
+          border-bottom: 1px solid #ececec;
+          padding: 10px 0px;
+          vertical-align: top;
+          word-break: break-word;
+          .editor {
+            border-left: 0px;
+          }
+        }
       }
     }
   }
@@ -65,26 +85,15 @@
   }
 
   .v-data-cell {
-    border-bottom: 1px solid #cecece;
-    border-right: 1px solid #cecece;
+    // border-bottom: 1px solid #cecece;
+    // border-right: 1px solid #cecece;
     display: flex;
     align-items: baseline;
     overflow: hidden;
 
-    .editor {
-      border-left: 0px;
-      padding-top: 10px;
-    }
-
     & > * {
-      padding: 10px;
+      padding: 0px 10px;
     }
   }
 
-  .droppable {
-    background: blue;
-    &:hover {
-      background: green;
-    }
-  }
 }

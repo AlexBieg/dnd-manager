@@ -3,12 +3,6 @@ import { connect } from 'react-redux';
 import { arrayMove } from 'react-sortable-hoc';
 import { debounce } from 'lodash';
 import {
-  MultiGrid,
-  AutoSizer,
-  CellMeasurer,
-  CellMeasurerCache,
-} from 'react-virtualized';
-import {
   getTableById,
   getRecordsByTableId,
   tableAddRow,
@@ -32,7 +26,6 @@ import './VirtualizedTable.scss';
 
 
 const HeaderCell = ({
-  style,
   value,
   onChangeColWidth,
   onChangeFilters,
@@ -45,10 +38,11 @@ const HeaderCell = ({
   columnName,
 }) => {
   const [dragStart, setDragStart] = useState(null);
+  const [filterTerm, setFilterTerm] = useState(filterValue);
+  const debouncedOnChangeFilters = debounce(onChangeFilters, 300);
 
   return (
     <div
-      style={style}
       className="v-header-cell"
       onDrop={onColumnDragEnd}
       onDragOver={e => e.preventDefault()}
@@ -77,8 +71,12 @@ const HeaderCell = ({
       <Input
         className="v-table-filter"
         placeholder="Filter..."
-        value={filterValue}
-        onChange={e => onChangeFilters(e.target.value)} />
+        value={filterTerm}
+        onChange={e => {
+          const val = e.target.value || '';
+          setFilterTerm(val);
+          debouncedOnChangeFilters(val);
+        }} />
     </div>
   );
 }
@@ -101,7 +99,6 @@ const DataCell = ({
   const onChangeInner = (val) => {
     setInnerVal(val);
   }
-
 
   return (
     <div
@@ -139,79 +136,9 @@ class VirtualizedTable extends React.Component {
       filters: {},
       filteredRecords: props.records,
       dragStartIndex: null,
-      outerHeight: 760,
       columnDragStartIndex: null,
-      cache: new CellMeasurerCache({
-        defaultWidth: 150,
-        defaultHeight: 100,
-        fixedWidth: true,
-      })
+      showCount: 10,
     }
-  }
-
-  onRenderCell = ({ columnIndex, rowIndex, key, style, parent }) => {
-    const { table } = this.props;
-    const { filters, cache, filteredRecords } = this.state;
-
-
-    if (rowIndex === 0) {
-      return (
-        <CellMeasurer
-          cache={cache}
-          key={key}
-          columnIndex={columnIndex}
-          parent={parent}
-          rowIndex={rowIndex}
-        >
-          <HeaderCell
-            style={{...style }}
-            value={table.columns[columnIndex].title}
-            onChangeColWidth={this.onChangeColWidth(columnIndex)}
-            deleteable={table.idColumn !== table.columns[columnIndex].name}
-            onDeleteColumn={this.onDelColumn(columnIndex)}
-            onChangeFilters={this.onSetFilters(table.columns[columnIndex].name)}
-            filterValue={filters[table.columns[columnIndex].name]}
-            onChangeColumnName={this.onChangeColumnName(columnIndex)}
-            columnName={table.columns[columnIndex].name}
-            onColumnDragStart={((index, cName) => (e) => {
-              e.dataTransfer.setDragImage(document.getElementById(`drag-column-${cName}`), 0, 0)
-              this.setState({ columnDragStartIndex: index });
-            })(columnIndex, table.columns[columnIndex].name)}
-            onColumnDragEnd={this.onColumnReorder(columnIndex)}
-            columnIndex={columnIndex}
-          />
-        </CellMeasurer>
-      )
-    }
-
-    const recordIndex = rowIndex - 1;
-
-
-    return (
-      <CellMeasurer
-        cache={cache}
-        key={`${key}-${filteredRecords[rowIndex - 1].__id}`}
-        columnIndex={columnIndex}
-        parent={parent}
-        rowIndex={rowIndex}
-      >
-        <DataCell
-          index={recordIndex}
-          style={{...style}}
-          onChange={this.onEditCell(columnIndex, recordIndex)}
-          onDeleteRow={this.onDeleteRow(recordIndex)}
-          onAddRow={this.onAddRow(recordIndex)}
-          hasMenu={columnIndex === 0}
-          showDrag={columnIndex === 0}
-          columnName={table.columns[columnIndex].name}
-          onStartDrag={((i, cName) => (e) => {
-            e.dataTransfer.setDragImage(document.getElementById(`drag-${i}-${cName}`), 0, 0)
-            this.setState({ dragStartIndex: i})
-          })(recordIndex, table.columns[columnIndex].name)}
-          onDrop={this.onRowReorder(recordIndex)}
-          value={filteredRecords[rowIndex - 1][table.columns[columnIndex].name]} />
-      </CellMeasurer>
-    )
   }
 
   onColumnReorder = (columnDragEndIndex) => () => {
@@ -303,9 +230,9 @@ class VirtualizedTable extends React.Component {
     });
   }
 
-  onSetFilters = (columnName) => (term) => {
+  onSetFilters = (columnName) => (term='') => {
     const { records } = this.props;
-    const { filters, cache } = this.state;
+    const { filters } = this.state;
     const newFilters = {
       ...filters,
       [columnName]: term,
@@ -313,39 +240,21 @@ class VirtualizedTable extends React.Component {
 
     const filteredRecords = this.getFilteredRecordsFromFilters(records, newFilters);
 
-    const totalRowHeights = filteredRecords.reduce((acc, r, i) => acc + cache.rowHeight({ index: i }), 0);
-    const outerHeight = Math.max(300, Math.min(totalRowHeights + 70, 760));
-
     this.setState({
       filters: newFilters,
       filteredRecords,
-      outerHeight,
+      showCount: 10,
     })
   }
 
-  componentDidMount() {
-    const { filteredRecords, cache } = this.state;
-    const totalRowHeights = filteredRecords.reduce((acc, r, i) => acc + cache.rowHeight({ index: i }), 0);
-    const outerHeight = Math.max(300, Math.min(totalRowHeights + 70, 760));
+  componentDidUpdate(prevProps) {
+    const { records } = this.props;
+    const { filters } = this.state;
 
-    this.setState({
-      outerHeight,
-    })
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const { table, records } = this.props;
-    const { filters, cache } = this.state;
-    const prevWidth = prevProps.table.columns.reduce((acc, c) => acc + c.width, 0);
-    const newWidth = table.columns.reduce((acc, c) => acc + c.width, 0);
-
-    if (prevWidth !== newWidth) {
-      cache.clearAll();
-      this.forceUpdate();
-    }
-
-    if (filters !== prevState.filters || records !== prevProps.records) {
-      cache.clearAll();
+    if (records !== prevProps.records) {
+      this.setState({
+        filteredRecords: this.getFilteredRecordsFromFilters(records, filters),
+      })
     }
   }
 
@@ -366,16 +275,25 @@ class VirtualizedTable extends React.Component {
     editName(id, newName);
   }
 
+  handleScroll = (e) => {
+    const { filteredRecords, showCount } = this.state;
+    const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+
+
+    if (bottom && showCount <= filteredRecords.length) {
+      this.setState({
+        showCount: showCount + 10,
+      })
+    }
+  }
+
   render() {
     const { table } = this.props;
-    const { cache, filteredRecords, outerHeight } = this.state;
+    const { filteredRecords, outerHeight, showCount, filters } = this.state;
 
     if (!table) {
       return <div>The selected table does not exist</div>
     }
-
-    const totalRecords = [{}, ...filteredRecords];
-
 
     return (
       <div className="v-table" style={{ height: outerHeight }}>
@@ -384,25 +302,63 @@ class VirtualizedTable extends React.Component {
           <Icon icon="plus" onClick={this.onAddRow(0)} />
           <Icon icon="columns" onClick={this.onAddColumn} />
         </div>
-        <div className="v-table-grid">
-          <AutoSizer>
-            {
-              ({ width, height }) => (
-                <MultiGrid
-                  useDragHandle
-                  headerHeight={30}
-                  height={height}
-                  width={width}
-                  fixedRowCount={1}
-                  rowCount={totalRecords.length}
-                  rowHeight={({index}) => cache.rowHeight({index}) + (index === 0 ? 10 : 0)}
-                  columnCount={table.columns.length}
-                  columnWidth={({ index }) => table.columns[index].width}
-                  cellRenderer={this.onRenderCell}
-                />
-              )
-            }
-          </AutoSizer>
+        <div className="v-table-grid" onScroll={this.handleScroll}>
+          <table cellSpacing="0" cellPadding="0">
+            <thead>
+              <tr>
+                {
+                  table.columns.map((c, columnIndex) => (
+                    <th style={{ minWidth: c.width }} key={c.name}>
+                      <HeaderCell
+                        value={c.title}
+                        onChangeColWidth={this.onChangeColWidth(columnIndex)}
+                        deleteable={table.idColumn !== table.columns[columnIndex].name}
+                        onDeleteColumn={this.onDelColumn(columnIndex)}
+                        onChangeFilters={this.onSetFilters(table.columns[columnIndex].name)}
+                        filterValue={filters[table.columns[columnIndex].name]}
+                        onChangeColumnName={this.onChangeColumnName(columnIndex)}
+                        columnName={table.columns[columnIndex].name}
+                        onColumnDragStart={((index, cName) => (e) => {
+                          e.dataTransfer.setDragImage(document.getElementById(`drag-column-${cName}`), 0, 0)
+                          this.setState({ columnDragStartIndex: index });
+                        })(columnIndex, table.columns[columnIndex].name)}
+                        onColumnDragEnd={this.onColumnReorder(columnIndex)}
+                        columnIndex={columnIndex}
+                      />
+                    </th>
+                  ))
+                }
+              </tr>
+            </thead>
+            <tbody>
+              {
+              filteredRecords.slice(0, showCount).map((r, recordIndex) => (
+                  <tr key={r.__id}>
+                    {
+                      table.columns.map((c, columnIndex) => (
+                        <td key={`${c.name}-${r.__id}`}>
+                          <DataCell
+                            index={recordIndex}
+                            onChange={this.onEditCell(columnIndex, recordIndex)}
+                            onDeleteRow={this.onDeleteRow(recordIndex)}
+                            onAddRow={this.onAddRow(recordIndex)}
+                            hasMenu={columnIndex === 0}
+                            showDrag={columnIndex === 0}
+                            columnName={table.columns[columnIndex].name}
+                            onStartDrag={((i, cName) => (e) => {
+                              e.dataTransfer.setDragImage(document.getElementById(`drag-${i}-${cName}`), 0, 0)
+                              this.setState({ dragStartIndex: i})
+                            })(recordIndex, table.columns[columnIndex].name)}
+                            onDrop={this.onRowReorder(recordIndex)}
+                            value={filteredRecords[recordIndex][table.columns[columnIndex].name]} />
+                        </td>
+                      ))
+                    }
+                  </tr>
+                ))
+              }
+            </tbody>
+          </table>
         </div>
       </div>
     );
