@@ -108,6 +108,7 @@ const pages = (state=INITIAL_STATE, { type, data}) => {
           ...state.pages,
           [newId]: { ...INTIAL_PAGE },
         },
+        levels: [...state.levels, { key: newId, level: 1 }]
       };
     case PAGES_DELETE_PAGE:
       return {
@@ -116,6 +117,7 @@ const pages = (state=INITIAL_STATE, { type, data}) => {
         pages: {
           ...omit(state.pages, data),
         },
+        levels: state.levels.filter(l => l.key !== data),
       };
     case PAGES_EDIT_PAGE:
       return {

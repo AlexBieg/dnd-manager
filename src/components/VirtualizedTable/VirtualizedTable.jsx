@@ -39,7 +39,7 @@ const HeaderCell = ({
 }) => {
   const [dragStart, setDragStart] = useState(null);
   const [filterTerm, setFilterTerm] = useState(filterValue);
-  const debouncedOnChangeFilters = debounce(onChangeFilters, 300);
+  const debouncedOnChangeFilters = debounce(onChangeFilters, 500);
 
   return (
     <div
@@ -137,7 +137,7 @@ class VirtualizedTable extends React.Component {
       filteredRecords: props.records,
       dragStartIndex: null,
       columnDragStartIndex: null,
-      showCount: 10,
+      showCount: 20,
     }
   }
 
@@ -243,7 +243,7 @@ class VirtualizedTable extends React.Component {
     this.setState({
       filters: newFilters,
       filteredRecords,
-      showCount: 10,
+      showCount: 20,
     })
   }
 
@@ -282,7 +282,7 @@ class VirtualizedTable extends React.Component {
 
     if (bottom && showCount <= filteredRecords.length) {
       this.setState({
-        showCount: showCount + 10,
+        showCount: showCount + 20,
       })
     }
   }
