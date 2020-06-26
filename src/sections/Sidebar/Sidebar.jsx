@@ -21,7 +21,6 @@ import PopoverMenu from 'components/PopoverMenu';
 import EditableText from 'components/EditableText';
 import Importer from 'sections/Importer';
 import './Sidebar.scss';
-import { combineReducers } from 'redux';
 
 
 const Sidebar = () => {

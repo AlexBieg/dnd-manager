@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { connect } from 'react-redux';
-import { arrayMove } from 'react-sortable-hoc';
+import { connect, useDispatch } from 'react-redux';
+import { arrayMove, SortableHandle } from 'react-sortable-hoc';
 import { debounce } from 'lodash';
+import {SortableContainer, SortableElement} from 'react-sortable-hoc';
 import {
   getTableById,
   getRecordsByTableId,
@@ -24,109 +25,171 @@ import Popover from 'components/Popover';
 import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
 
+const HeaderDragHandle = SortableHandle(() => (
+  <Icon
+    icon="arrows-alt-h"
+    draggable
+  />
+));
 
-const HeaderCell = ({
+const HeaderCell = SortableElement(({
   value,
-  onChangeColWidth,
   onChangeFilters,
   filterValue='',
-  onDeleteColumn,
   deleteable,
-  onChangeColumnName,
-  onColumnDragStart,
-  onColumnDragEnd,
-  columnName,
+  column,
+  table,
+  tableId
 }) => {
   const [dragStart, setDragStart] = useState(null);
   const [filterTerm, setFilterTerm] = useState(filterValue);
+  const dispatch = useDispatch();
   const debouncedOnChangeFilters = debounce(onChangeFilters, 500);
 
+  const onChangeColumnName = (newName) => {
+    const newCols = table.columns.map((c) => ({
+      ...c,
+      title: c.name === column.name ? newName : c.title,
+    }));
+
+    dispatch(tableEditCols(tableId, newCols));
+  }
+
+  const onChangeColumnWidth = (widthChange) => {
+    const newCols = table.columns.map((c) => ({
+      ...c,
+      width: c.name === column.name ? (c.width + widthChange) : c.width
+    }))
+
+    dispatch(tableEditCols(tableId, newCols));
+  }
+
   return (
-    <div
-      className="v-header-cell"
-      onDrop={onColumnDragEnd}
-      onDragOver={e => e.preventDefault()}
-      id={`drag-column-${columnName}`}
-    >
-      <ManagedEditableText text={value} className="v-header-text" onChange={(e) => onChangeColumnName(e.target.value)} />
-      {
-        deleteable &&
+    <th style={{ width: column.width, minWidth: column.width }}>
+      <div className="v-header-cell">
+        <ManagedEditableText text={value} className="v-header-text" onChange={(e) => onChangeColumnName(e.target.value)} />
+        {
+          deleteable &&
+          <Icon
+            icon="trash"
+            onClick={() => dispatch(tableDelCol(tableId, column.name))}
+          />
+        }
+        <HeaderDragHandle />
         <Icon
-          icon="trash"
-          onClick={onDeleteColumn}
+          className="v-header-grip"
+          draggable
+          icon="grip-lines-vertical"
+          onDragStart={e => setDragStart(e.clientX)}
+          onDragEnd={e => onChangeColumnWidth(e.clientX - dragStart)}
         />
-      }
-      <Icon
-        icon="arrows-alt-h"
-        draggable
-        onDragStart={onColumnDragStart}
-      />
-      <Icon
-        className="v-header-grip"
-        draggable
-        icon="grip-lines-vertical"
-        onDragStart={e => setDragStart(e.clientX)}
-        onDragEnd={e => onChangeColWidth(e.clientX - dragStart)}
-      />
-      <Input
-        className="v-table-filter"
-        placeholder="Filter..."
-        value={filterTerm}
-        onChange={e => {
-          const val = e.target.value || '';
-          setFilterTerm(val);
-          debouncedOnChangeFilters(val);
-        }} />
-    </div>
+        <Input
+          className="v-table-filter"
+          placeholder="Filter..."
+          value={filterTerm}
+          onChange={e => {
+            const val = e.target.value || '';
+            setFilterTerm(val);
+            debouncedOnChangeFilters(column.name, val);
+          }} />
+      </div>
+    </th>
   );
-}
+})
+
+const HeaderRow = SortableContainer(({ tableId, table, filters, onChangeFilters }) => (
+  <tr>
+    {
+      table.columns.map((c, columnIndex) => (
+        <HeaderCell
+          key={c.name}
+          index={columnIndex}
+          value={c.title}
+          column={c}
+          table={table}
+          tableId={tableId}
+          deleteable={table.idColumn !== table.columns[columnIndex].name}
+          onChangeFilters={onChangeFilters}
+          filterValue={filters[table.columns[columnIndex].name]}
+        />
+      ))
+    }
+  </tr>
+));
+
+const RowDragger = SortableHandle(() => (
+  <Icon className="grip-lines" icon="grip-lines" draggable />
+));
 
 const DataCell = ({
-  style,
   value,
-  onChange,
-  onDeleteRow,
-  onAddRow,
+  tableId,
+  recordId,
+  recordIndex,
   hasMenu=false,
-  index,
   showDrag,
-  onStartDrag,
-  onDrop,
   columnName,
 }) => {
   const [innerVal, setInnerVal] = useState(value);
+  const dispatch = useDispatch();
 
   const onChangeInner = (val) => {
     setInnerVal(val);
   }
 
   return (
-    <div
-      {...(showDrag ? { id: `drag-${index}-${columnName}`} : {})}
-      index={index}
-      style={style}
-      className={"v-data-cell"}
-      onDrop={onDrop}
-      onDragOver={e => e.preventDefault()}
-    >
-      { showDrag && <Icon icon="grip-lines" draggable onDragStart={onStartDrag} /> }
-      {
-        hasMenu &&
-          <Popover options={[
-            { text: 'Delete Row', icon: 'trash-alt', onClick: () => onDeleteRow() },
-            { text: 'Add Row Above', icon: 'plus', onClick: () => onAddRow() }
-          ]}>
-            <Icon className="menu" icon="ellipsis-v" />
-          </Popover>
-      }
-      <Editor
-        value={innerVal}
-        onChange={onChangeInner}
-        onBlur={() => onChange(innerVal)}
-      />
-    </div>
+    <td>
+      <div
+        className={"v-data-cell"}
+        onDragOver={e => e.preventDefault()}
+      >
+        { showDrag &&  <RowDragger />}
+        {
+          hasMenu &&
+            <Popover options={[
+              { text: 'Delete Row', icon: 'trash-alt', onClick: () => dispatch(tableDelRow(tableId, recordId)) },
+              { text: 'Add Row Above', icon: 'plus', onClick: () => dispatch(tableAddRow(tableId, recordIndex)) }
+            ]}>
+              <Icon className="menu" icon="ellipsis-v" />
+            </Popover>
+        }
+        <Editor
+          value={innerVal}
+          onChange={onChangeInner}
+          onBlur={() => dispatch(tableEditRow(tableId, recordId, { [columnName]: innerVal }))}
+        />
+      </div>
+    </td>
   );
 }
+
+const DataRow = SortableElement(({ table, record, recordIndex, id }) => (
+  <tr>
+    {
+      table.columns.map((c, columnIndex) => (
+        <DataCell
+          key={`${c.name}-${record.__id}`}
+          hasMenu={columnIndex === 0}
+          showDrag={columnIndex === 0}
+          columnName={table.columns[columnIndex].name}
+          tableId={id}
+          recordId={record.__id}
+          recordIndex={recordIndex}
+          value={record[table.columns[columnIndex].name]} />
+      ))
+    }
+  </tr>
+));
+
+const DataGrid = SortableContainer(({ filteredRecords, showCount, table, id }) => (
+  <tbody>
+    {
+      filteredRecords.slice(0, showCount).map((r, recordIndex) => (
+        <DataRow key={r.__id} index={recordIndex} table={table} record={r} id={id} recordIndex={recordIndex} />
+      ))
+    }
+</tbody>
+));
 
 class VirtualizedTable extends React.Component {
   constructor(props) {
@@ -135,85 +198,29 @@ class VirtualizedTable extends React.Component {
     this.state = {
       filters: {},
       filteredRecords: props.records,
-      dragStartIndex: null,
-      columnDragStartIndex: null,
       showCount: 20,
     }
   }
 
-  onColumnReorder = (columnDragEndIndex) => () => {
+  onColumnReorder = ({ oldIndex, newIndex}) => {
     const { table, id, editCols } = this.props;
-    const { columnDragStartIndex } = this.state;
 
-    if (columnDragStartIndex !== null) {
-      editCols(id, arrayMove(table.columns, columnDragStartIndex, columnDragEndIndex));
-      this.setState({ columnDragStartIndex: null });
+    if (oldIndex !== newIndex) {
+      editCols(id, arrayMove(table.columns, oldIndex, newIndex));
     }
   }
 
-  onRowReorder = (dragEndIndex) => () => {
+  onRowReorder = ({ oldIndex, newIndex}) => {
     const { table, orderRows, id } = this.props;
-    const { dragStartIndex } = this.state;
 
-    if (dragStartIndex !== null) {
-      orderRows(id, arrayMove(table.rows, dragStartIndex, dragEndIndex));
-      this.setState({ dragStartIndex: null })
+    if (oldIndex !== newIndex) {
+      orderRows(id, arrayMove(table.rows, oldIndex, newIndex));
     }
-  }
-
-  onDeleteRow = (rowIndex) => () => {
-    const { table, id, delRow } = this.props;
-
-    delRow(id, table.rows[rowIndex]);
   }
 
   onAddRow = (index=0) => () => {
     const { id, addRow } = this.props;
     addRow(id, index)
-  }
-
-  onChangeColumnName = (columnIndex) => (newName) => {
-    const { table, id, editCols } = this.props;
-
-    const newCols = table.columns.map((c, i) => {
-      if (i !== columnIndex) {
-        return c;
-      }
-
-      return {
-        ...c,
-        title: newName,
-      }
-    });
-
-    editCols(id, newCols);
-  }
-
-  onChangeColWidth = (columnIndex) => (diff) => {
-    const { table, id, editCols } = this.props;
-
-    const newCols = table.columns.map((c, i) => {
-      if (i !== columnIndex) {
-        return c;
-      }
-
-      return {
-        ...c,
-        width: Math.max(c.width + diff, 80),
-      }
-    });
-
-    editCols(id, newCols);
-  }
-
-  onEditCell = (columnIndex, rowIndex) => (value) => {
-    const { editRow, id, table } = this.props;
-    const { filteredRecords } = this.state;
-    const rowChanges = {
-      [table.columns[columnIndex].name]: value,
-    }
-
-    editRow(id, filteredRecords[rowIndex].__id, rowChanges)
   }
 
   getFilteredRecordsFromFilters = (records, filters) => {
@@ -230,7 +237,7 @@ class VirtualizedTable extends React.Component {
     });
   }
 
-  onSetFilters = (columnName) => (term='') => {
+  onSetFilters = (columnName, term='') => {
     const { records } = this.props;
     const { filters } = this.state;
     const newFilters = {
@@ -263,12 +270,6 @@ class VirtualizedTable extends React.Component {
     addCol(id);
   }
 
-  onDelColumn = (colIndex) => () => {
-    const { delCol, id, table } = this.props;
-
-    delCol(id, table.columns[colIndex].name);
-  }
-
   onChangeTableName = (newName) => {
     const { id, editName } = this.props;
 
@@ -288,7 +289,7 @@ class VirtualizedTable extends React.Component {
   }
 
   render() {
-    const { table } = this.props;
+    const { table, id } = this.props;
     const { filteredRecords, outerHeight, showCount, filters } = this.state;
 
     if (!table) {
@@ -305,59 +306,30 @@ class VirtualizedTable extends React.Component {
         <div className="v-table-grid" onScroll={this.handleScroll}>
           <table cellSpacing="0" cellPadding="0">
             <thead>
-              <tr>
-                {
-                  table.columns.map((c, columnIndex) => (
-                    <th style={{ minWidth: c.width }} key={c.name}>
-                      <HeaderCell
-                        value={c.title}
-                        onChangeColWidth={this.onChangeColWidth(columnIndex)}
-                        deleteable={table.idColumn !== table.columns[columnIndex].name}
-                        onDeleteColumn={this.onDelColumn(columnIndex)}
-                        onChangeFilters={this.onSetFilters(table.columns[columnIndex].name)}
-                        filterValue={filters[table.columns[columnIndex].name]}
-                        onChangeColumnName={this.onChangeColumnName(columnIndex)}
-                        columnName={table.columns[columnIndex].name}
-                        onColumnDragStart={((index, cName) => (e) => {
-                          e.dataTransfer.setDragImage(document.getElementById(`drag-column-${cName}`), 0, 0)
-                          this.setState({ columnDragStartIndex: index });
-                        })(columnIndex, table.columns[columnIndex].name)}
-                        onColumnDragEnd={this.onColumnReorder(columnIndex)}
-                        columnIndex={columnIndex}
-                      />
-                    </th>
-                  ))
-                }
-              </tr>
+              <HeaderRow
+                table={table}
+                tableId={id}
+                filters={filters}
+                axis="x"
+                lockAxis="x"
+                onSortEnd={this.onColumnReorder}
+                onChangeFilters={this.onSetFilters}
+                useDragHandle
+              />
             </thead>
-            <tbody>
-              {
-              filteredRecords.slice(0, showCount).map((r, recordIndex) => (
-                  <tr key={r.__id}>
-                    {
-                      table.columns.map((c, columnIndex) => (
-                        <td key={`${c.name}-${r.__id}`}>
-                          <DataCell
-                            index={recordIndex}
-                            onChange={this.onEditCell(columnIndex, recordIndex)}
-                            onDeleteRow={this.onDeleteRow(recordIndex)}
-                            onAddRow={this.onAddRow(recordIndex)}
-                            hasMenu={columnIndex === 0}
-                            showDrag={columnIndex === 0}
-                            columnName={table.columns[columnIndex].name}
-                            onStartDrag={((i, cName) => (e) => {
-                              e.dataTransfer.setDragImage(document.getElementById(`drag-${i}-${cName}`), 0, 0)
-                              this.setState({ dragStartIndex: i})
-                            })(recordIndex, table.columns[columnIndex].name)}
-                            onDrop={this.onRowReorder(recordIndex)}
-                            value={filteredRecords[recordIndex][table.columns[columnIndex].name]} />
-                        </td>
-                      ))
-                    }
-                  </tr>
-                ))
-              }
-            </tbody>
+            <DataGrid
+              lockAxis="y"
+              helperClass="dragging-row"
+              useDragHandle
+              id={id}
+              onSortEnd={this.onRowReorder}
+              getHelperDimensions={({ node }) => ({
+                height: 40,
+                width: node.offsetWidth,
+              })}
+              filteredRecords={filteredRecords}
+              table={table}
+              showCount={showCount} />
           </table>
         </div>
       </div>
@@ -371,8 +343,6 @@ const mapStateToProps = (state, props) => ({
 });
 
 const mapDispatchToProps = {
-  editRow: tableEditRow,
-  delRow: tableDelRow,
   editCols: tableEditCols,
   addRow: tableAddRow,
   addCol: tableAddCol,

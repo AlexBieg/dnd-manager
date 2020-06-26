@@ -1,3 +1,31 @@
+.dragging-row {
+  display: table !important;
+  background-color: #ececec;
+  overflow: hidden;
+  opacity: .5;
+
+  td {
+    border-bottom: 1px solid #ececec;
+    padding: 10px 0px;
+    vertical-align: top;
+    word-break: break-word;
+
+    .editor {
+      border-left: 0px;
+    }
+
+    .v-data-cell {
+      display: flex;
+      align-items: baseline;
+      overflow: hidden;
+
+      i {
+        padding: 0px 10px;
+      }
+    }
+  }
+}
+
 .v-table {
   width: 100%;
   overflow: hidden;
@@ -12,7 +40,6 @@
     display: flex;
 
     table {
-      flex: 1;
       border: none;
 
       tr {
@@ -85,13 +112,11 @@
   }
 
   .v-data-cell {
-    // border-bottom: 1px solid #cecece;
-    // border-right: 1px solid #cecece;
     display: flex;
     align-items: baseline;
     overflow: hidden;
 
-    & > * {
+    .grip-lines {
       padding: 0px 10px;
     }
   }
