@@ -1,6 +1,6 @@
 import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
-import { omit, pull, get } from 'lodash';
+import { omit } from 'lodash';
 
 // Selectors
 export const getPagesSection = (state) => state.pages;

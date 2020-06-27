@@ -45,14 +45,14 @@ const Page = ({ pageId }) => {
     setFocusRow(null);
   }
 
-  const handleNext = (index) => () => {
+  const handleNext = (index) => (e) => {
     const newContent = [...page.content];
     newContent.splice(index + 1, 0, { id: uuidV4(), content: null });
     dispatch(pagesEditPage(pageId, {
       ...page,
       content: newContent,
     }));
-    setFocusRow(index + 1);
+    // setFocusRow(index + 1);
   }
 
   const onAddContent = () => {
@@ -63,7 +63,7 @@ const Page = ({ pageId }) => {
     }));
   }
 
-  const onDeleteContent = (index) => {
+  const onDeleteContent = (index) => () => {
     const newContent = [...page.content];
     newContent.splice(index, 1);
     dispatch(pagesEditPage(pageId, {
@@ -102,7 +102,7 @@ const Page = ({ pageId }) => {
         text: 'Delete',
         icon: 'trash-alt',
         onClick: ((index) => () => {
-          onDeleteContent(index);
+          onDeleteContent(index)();
           onCloseMenu(index)();
         })(index)
       },
@@ -174,6 +174,7 @@ const Page = ({ pageId }) => {
                         typeof c.content !== 'string' &&
                         <Editor
                           onNext={handleNext(i)}
+                          onDelete={onDeleteContent(i)}
                           value={c.content}
                           onFocus={onFocus(i)}
                           focus={i === focusRow}

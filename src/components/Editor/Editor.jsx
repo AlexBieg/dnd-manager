@@ -214,12 +214,11 @@ class CustomEditor extends Component {
   }
 
   onKeyDown = (event) => {
-    const { onNext } = this.props;
+    const { onNext, onDelete } = this.props;
     const { editor } = this.state;
 
     if (event.key === 'Enter' && event.shiftKey) {
-      event.preventDefault();
-      onNext();
+      onNext(event);
       return;
     }
 
@@ -268,6 +267,10 @@ class CustomEditor extends Component {
         CustomEditorEvents.toggleBlock(editor, 'ordered-list')
       } else if (prevWord === undefined) {
         CustomEditorEvents.toggleBlock(editor, null)
+      }
+
+      if (Node.string(editor).length === 0 && editor.children.length === 1) {
+        onDelete();
       }
     }
 
