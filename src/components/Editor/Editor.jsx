@@ -210,7 +210,9 @@ class CustomEditor extends Component {
   }
 
   onChange = (newValue) => {
-    this.props.onChange(newValue);
+    if (newValue !== this.props.value) {
+      this.props.onChange(newValue);
+    }
   }
 
   onKeyDown = (event) => {
@@ -218,6 +220,7 @@ class CustomEditor extends Component {
     const { editor } = this.state;
 
     if (event.key === 'Enter' && event.shiftKey) {
+      event.preventDefault();
       onNext(event);
       return;
     }
@@ -374,8 +377,18 @@ class CustomEditor extends Component {
     }
   }
 
+  handleFocus = () => {
+    const { focus } = this.props;
+    const { editor } = this.state;
+
+    if (focus && !ReactEditor.isFocused(editor)) {
+      ReactEditor.focus(editor);
+    }
+  }
+
   componentDidMount() {
     window.addEventListener('beforeunload', this.handleBlur);
+    this.handleFocus();
   }
 
   componentWillUnmount() {
@@ -383,8 +396,12 @@ class CustomEditor extends Component {
     window.removeEventListener('beforeunload', this.handleBlur);
   }
 
+  componentDidUpdate() {
+    this.handleFocus();
+  }
+
   render() {
-    const { value, onBlur, className } = this.props;
+    const { value, className } = this.props;
     const { editor } = this.state;
 
 
@@ -405,7 +422,7 @@ class CustomEditor extends Component {
             renderElement={this.renderElement}
             renderLeaf={this.renderLeaf}
             onKeyDown={this.onKeyDown}
-            onBlur={onBlur}
+            onBlur={this.handleBlur}
           />
         </Slate>
       </div>

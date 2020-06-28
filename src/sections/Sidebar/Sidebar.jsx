@@ -133,8 +133,8 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="header">D&D Manager</div>
+      <div className="pages-header">Your Pages</div>
       <div className="pages">
-        <div className="pages-header">Your Pages</div>
         <DragDropContext onDragStart={handleDragStart(collapsed)} onDragEnd={handleReorderPages(visiblePages, collapsed, levels)}>
           <Droppable className="page-content" droppableId="content" isCombineEnabled>
             {(provided, snapshot) => (

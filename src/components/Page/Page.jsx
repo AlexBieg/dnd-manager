@@ -52,7 +52,7 @@ const Page = ({ pageId }) => {
       ...page,
       content: newContent,
     }));
-    // setFocusRow(index + 1);
+    setFocusRow(index + 1);
   }
 
   const onAddContent = () => {
@@ -66,6 +66,13 @@ const Page = ({ pageId }) => {
   const onDeleteContent = (index) => () => {
     const newContent = [...page.content];
     newContent.splice(index, 1);
+
+    if (index === 0) {
+      setFocusRow(0);
+    } else {
+      setFocusRow(index - 1);
+    }
+
     dispatch(pagesEditPage(pageId, {
       ...page,
       content: newContent,

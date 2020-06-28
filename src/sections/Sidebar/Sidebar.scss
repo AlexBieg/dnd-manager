@@ -1,9 +1,10 @@
 .sidebar {
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   max-width: 250px;
   background-color: #ececec;
   width: 50%;
-  height: 100%;
+  padding: 10px;
 
   .header {
     font-weight: bold;
@@ -15,8 +16,10 @@
   }
 
   .pages {
+    flex: 1;
+    overflow: scroll;
     .pages-list {
-      overflow-x: scroll;
+      overflow: scroll;
     }
     .page-item {
       display: flex;
