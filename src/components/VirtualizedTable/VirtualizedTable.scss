@@ -6,6 +6,7 @@
 
   td {
     border-bottom: 1px solid #ececec;
+    border-right: 1px solid #ececec;
     padding: 10px 0px;
     vertical-align: top;
     word-break: break-word;
@@ -51,9 +52,15 @@
         }
         td {
           border-bottom: 1px solid #ececec;
+          border-right: 1px solid #ececec;
           padding: 10px 0px;
           vertical-align: top;
           word-break: break-word;
+
+          &:last-child {
+            border-right: 0px;
+          }
+
           .editor {
             border-left: 0px;
           }
@@ -105,9 +112,15 @@
       }
     }
 
-    .v-table-filter {
+    .v-header-filter-wrapper {
+      display: flex;
+      align-items: center;
       flex-basis: 100%;
       margin: 5px;
+
+      .v-table-filter {
+        flex: 1
+      }
     }
   }
 

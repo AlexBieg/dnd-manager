@@ -35,14 +35,14 @@ const HeaderDragHandle = SortableHandle(() => (
 const HeaderCell = SortableElement(({
   value,
   onChangeFilters,
-  filterValue='',
+  filterValue={},
   deleteable,
   column,
   table,
   tableId
 }) => {
   const [dragStart, setDragStart] = useState(null);
-  const [filterTerm, setFilterTerm] = useState(filterValue);
+  const [filterTerm, setFilterTerm] = useState(filterValue.term || '');
   const dispatch = useDispatch();
   const debouncedOnChangeFilters = debounce(onChangeFilters, 500);
 
@@ -83,15 +83,25 @@ const HeaderCell = SortableElement(({
           onDragStart={e => setDragStart(e.clientX)}
           onDragEnd={e => onChangeColumnWidth(e.clientX - dragStart)}
         />
-        <Input
-          className="v-table-filter"
-          placeholder="Filter..."
-          value={filterTerm}
-          onChange={e => {
-            const val = e.target.value || '';
-            setFilterTerm(val);
-            debouncedOnChangeFilters(column.name, val);
-          }} />
+        <div className="v-header-filter-wrapper">
+          <Input
+            className="v-table-filter"
+            placeholder="Filter..."
+            value={filterTerm}
+            onChange={e => {
+              const val = e.target.value || '';
+              setFilterTerm(val);
+              debouncedOnChangeFilters(column.name, { term: val, type: filterValue.type });
+            }} />
+          {
+            (filterValue.type === 'includes' || !filterValue.type) &&
+              <Icon icon="dot-circle" onClick={() => onChangeFilters(column.name, { term: filterTerm, type: 'exact' })} />
+          }
+          {
+            filterValue.type === 'exact' &&
+            <Icon icon="circle" onClick={() => onChangeFilters(column.name, { term: filterTerm, type: 'includes' })} />
+          }
+        </div>
       </div>
     </th>
   );
@@ -225,24 +235,36 @@ class VirtualizedTable extends React.Component {
 
   getFilteredRecordsFromFilters = (records, filters) => {
     return records.filter((r) => {
-      return Object.entries(filters).every(([cName, term]) => {
+      return Object.entries(filters).every(([cName, { term, type }]) => {
         let text;
         if (typeof r[cName] === 'object') {
           text = r[cName].map(n => Node.string(n))[0];
         } else {
           text = r[cName];
         }
-        return (text || '').toLowerCase().includes(term.toLowerCase());
+
+        switch (type) {
+          case 'includes':
+            return (text || '').toLowerCase().includes(term.toLowerCase());
+          case 'exact':
+            return (text || '').toLowerCase() === term.toLowerCase();
+          default:
+            return false;
+        }
       });
     });
   }
 
-  onSetFilters = (columnName, term='') => {
+  onSetFilters = (columnName, { term='', type }) => {
+    console.log(term, type);
     const { records } = this.props;
     const { filters } = this.state;
     const newFilters = {
       ...filters,
-      [columnName]: term,
+      [columnName]: {
+        term,
+        type: type || 'includes',
+      },
     };
 
     const filteredRecords = this.getFilteredRecordsFromFilters(records, newFilters);
