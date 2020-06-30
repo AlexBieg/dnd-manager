@@ -55,7 +55,7 @@ Each column can be renamed and reordered. A filter text box can be used to filte
 Each row can be dragged to reorder. Rows can be deleted using the menu. And Rows can be added above also using the menu.
 
 ## Future Improvements
-2. Improve the dice rolling regular expression to better capture all dice text
+1. Improve the dice rolling regular expression to better capture all dice text
 3. Add better drag and drop to the pages list as it can be wonky in certain edge cases
 4. Add sorting to tables. (The functionality should be super easy to add, but I'm kinda stuck an a good UI)
 5. Add the ability to create custom templates for both pages and tables. This would allow users to create initative tables that fit their needs and not have to recreate it on every page.
