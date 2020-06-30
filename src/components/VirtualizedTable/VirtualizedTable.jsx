@@ -234,7 +234,7 @@ class VirtualizedTable extends React.Component {
   }
 
   getFilteredRecordsFromFilters = (records, filters) => {
-    return records.filter((r) => {
+    const r = records.filter((r) => {
       return Object.entries(filters).every(([cName, { term, type }]) => {
         let text;
         if (typeof r[cName] === 'object') {
@@ -253,10 +253,11 @@ class VirtualizedTable extends React.Component {
         }
       });
     });
+
+    return r;
   }
 
   onSetFilters = (columnName, { term='', type }) => {
-    console.log(term, type);
     const { records } = this.props;
     const { filters } = this.state;
     const newFilters = {

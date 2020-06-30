@@ -1,3 +1,21 @@
+.editor-popover {
+  top: -9999px;
+  left: -9999px;
+  position: absolute;
+  z-index: 1;
+  padding: 3px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,.2);
+  overflow: scroll;
+
+  .editor-popover-item {
+    &.selected {
+      background-color: #ececec;;
+    }
+  }
+}
+
 .editor {
   flex: 1;
 

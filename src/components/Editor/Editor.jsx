@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import { createEditor, Transforms, Editor, Text, Range, Node } from 'slate'
 import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import classNames from 'classnames';
@@ -123,6 +124,10 @@ const CustomEditorEvents = {
   },
 }
 
+export const Portal = ({ children }) => {
+  return ReactDOM.createPortal(children, document.body)
+}
+
 const Leaf = props => {
   return (
     <span
@@ -137,7 +142,7 @@ const Leaf = props => {
   )
 }
 
-const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rollAction })(({
+const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rollAction, setActiveRecord: tablesSetActiveRecord })(({
   attributes,
   children,
   element,
@@ -192,17 +197,23 @@ class CustomEditor extends Component {
   static defaultProps = {
     onBlur: () => {},
     onChange: () => {},
+    onDelete: () => {},
   }
 
   constructor(props) {
     super(props);
     this.state = {
       editor: withInline(withReact(createEditor())),
+      pageMatches: [],
+      recordMatches: [],
+      targetRange: null,
+      portalRef: React.createRef(),
+      selectIndex: 0,
     };
   }
 
   renderElement = (props) => {
-    return <Element {...props} setActiveRecord={this.props.setActiveRecord}/>
+    return <Element {...props} />
   }
 
   renderLeaf = (props) => {
@@ -210,14 +221,56 @@ class CustomEditor extends Component {
   }
 
   onChange = (newValue) => {
+    const { editor } = this.state;
+
     if (newValue !== this.props.value) {
       this.props.onChange(newValue);
     }
+
+    if (editor.selection) {
+      const [start] = Range.edges(editor.selection);
+      const wordBefore = Editor.before(editor, start, { unit: 'word' });
+      const before = wordBefore && Editor.before(editor, wordBefore);
+      const beforeRange = before && Editor.range(editor, before, start);
+      const beforeText = beforeRange && Editor.string(editor, beforeRange);
+
+      for (let i = 0; i < INLINE_MATCHES.length; i++) {
+        const { stateKey, regex, searchKey, getData } = INLINE_MATCHES[i];
+
+        const match = (beforeText || '').match(regex);
+
+        if (match) {
+          const results = fuzzysort.go(match[1], getData(this.props), { key: searchKey });
+          this.setState({
+            [stateKey]: results.map(r => r.obj),
+            targetRange: beforeRange,
+          });
+        } else {
+          this.setState({ [stateKey]: [] });
+        }
+      }
+    }
+    this.setState({ selectIndex: 0 });
   }
 
   onKeyDown = (event) => {
     const { onNext, onDelete } = this.props;
-    const { editor } = this.state;
+    const { editor, targetRange, selectIndex, pageMatches, recordMatches } = this.state;
+
+    if (event.key === 'ArrowDown' && (pageMatches.length || recordMatches.length)) {
+      event.preventDefault();
+      const length = pageMatches.length || recordMatches.length;
+      this.setState({
+        selectIndex: Math.min(selectIndex+1, length - 1),
+      });
+    }
+
+    if (event.key === 'ArrowUp' && (pageMatches.length || recordMatches.length)) {
+      event.preventDefault();
+      this.setState({
+        selectIndex: Math.max(selectIndex-1, 0),
+      });
+    }
 
     if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault();
@@ -226,35 +279,24 @@ class CustomEditor extends Component {
     }
 
     if (event.key === 'Enter') {
-      const [start] = Range.edges(editor.selection);
-      const wordBefore = Editor.before(editor, start, { unit: 'word' });
-      const before = wordBefore && Editor.before(editor, wordBefore);
-      const beforeRange = before && Editor.range(editor, before, start);
-      const beforeText = beforeRange && Editor.string(editor, beforeRange);
-
       for (let i = 0; i < INLINE_MATCHES.length; i++) {
-        const { element, dataProp, regex, searchKey, getData } = INLINE_MATCHES[i];
+        const { stateKey, element, dataProp } = INLINE_MATCHES[i];
 
-        const match = (beforeText || '').match(regex);
+        const results = this.state[stateKey];
 
-        if (match) {
-          const results = fuzzysort.go(match[1], getData(this.props), { key: searchKey });
+        if (results.length) {
+          event.preventDefault();
+          Transforms.select(editor, targetRange);
 
-          if (results) {
-            event.preventDefault();
-            Transforms.select(editor, beforeRange);
+          const inlineEl = {
+            type: element,
+            [dataProp]: results[selectIndex],
+            children: [{ text: '' }],
+          };
 
-            const inlineEl = {
-              type: element,
-              [dataProp]: results[0].obj,
-              children: [{ text: '' }],
-            };
-
-            Transforms.insertNodes(editor, inlineEl);
-            Transforms.move(editor, { distance: 1 });
-          }
+          Transforms.insertNodes(editor, inlineEl);
+          Transforms.move(editor, { distance: 1 });
         }
-
       }
     }
 
@@ -374,6 +416,10 @@ class CustomEditor extends Component {
   handleBlur = () => {
     if (ReactEditor.isFocused(this.state.editor)) {
       this.props.onBlur();
+      this.setState({
+        recordMatches: [],
+        pageMatches: [],
+      })
     }
   }
 
@@ -398,11 +444,21 @@ class CustomEditor extends Component {
 
   componentDidUpdate() {
     this.handleFocus();
+
+    const { editor, recordMatches, pageMatches, targetRange, portalRef } = this.state;
+
+    if ((recordMatches.length || pageMatches.length) && targetRange) {
+      const portal = portalRef.current;
+      const domRange = ReactEditor.toDOMRange(editor, targetRange)
+      const rect = domRange.getBoundingClientRect();
+      portal.style.top = `${rect.bottom + window.pageYOffset + 5}px`
+      portal.style.left = `${rect.left + window.pageXOffset}px`
+    }
   }
 
   render() {
     const { value, className } = this.props;
-    const { editor } = this.state;
+    const { editor, pageMatches, recordMatches, portalRef, selectIndex } = this.state;
 
 
     let stringVal;
@@ -424,6 +480,26 @@ class CustomEditor extends Component {
             onKeyDown={this.onKeyDown}
             onBlur={this.handleBlur}
           />
+          {
+            (pageMatches.length || recordMatches.length) > 0 &&
+            <Portal>
+              <div
+                ref={portalRef}
+                className="editor-popover"
+              >
+                {
+                  pageMatches.slice(0, 5).map((p, i) => (
+                    <div key={p.key} className={classNames('editor-popover-item', { selected: selectIndex === i})}>{p.name}</div>
+                  ))
+                }
+                {
+                  recordMatches.slice(0, 5).map((r, i) => (
+                    <div key={r.__id} className={classNames('editor-popover-item', { selected: selectIndex === i})}>{r.name}</div>
+                  ))
+                }
+              </div>
+            </Portal>
+          }
         </Slate>
       </div>
     );
@@ -437,8 +513,4 @@ const mapStateToProps = (state) => ({
 });
 
 
-const mapDispatchToProps = {
-  setActiveRecord: tablesSetActiveRecord,
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(CustomEditor);
+export default connect(mapStateToProps)(CustomEditor);
