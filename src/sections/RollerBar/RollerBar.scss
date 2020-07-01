@@ -1,9 +1,21 @@
 .roller-bar {
-  background-color: #272727;
-  color: white;
-  padding: 20px;
   display: flex;
-  flex-direction: column;
-  max-width: 150px;
-  width: 150px;
+
+  .roller-bar-drag-handle {
+    width: 4px;
+    height: 100%;
+    background: #cecece;
+
+    &:hover {
+      cursor: ew-resize;
+    }
+  }
+
+  .roller-bar-content {
+    flex: 1;
+    background-color: #ececec;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
 }

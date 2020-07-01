@@ -1,12 +1,10 @@
 .button {
   color: white;
-  padding: 10px;
+  padding: 5px;
   background: #7aa2cc;
   border-radius: 5px;
   border: none;
-  height: 40px;
-  min-width: 40px;
-  margin-left: 10px;
+  width: 100%;
 
   &:hover {
     cursor: pointer;

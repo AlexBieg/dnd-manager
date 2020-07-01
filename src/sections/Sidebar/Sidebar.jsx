@@ -15,6 +15,7 @@ import {
   pagesEditPage,
   pagesSetLevels,
 } from 'reducers/pages';
+import { getSidebarWidth, settingsSetSidebarWidth } from 'reducers/settings';
 import Button from 'components/Button';
 import Icon from 'components/Icon';
 import PopoverMenu from 'components/PopoverMenu';
@@ -27,6 +28,7 @@ const Sidebar = () => {
   const dispatch = useDispatch();
   const pages = useSelector(getPages);
   const levels = useSelector(getLevels);
+  const width = useSelector(getSidebarWidth);
 
   const activeId = useSelector(getActivePageId)
   const [openMenus, setOpenMenus] = useState(new Set());
@@ -131,63 +133,66 @@ const Sidebar = () => {
   }, []);
 
   return (
-    <div className="sidebar">
-      <div className="header">D&D Manager</div>
-      <div className="pages-header">Your Pages</div>
-      <div className="pages">
-        <DragDropContext onDragStart={handleDragStart(collapsed)} onDragEnd={handleReorderPages(visiblePages, collapsed, levels)}>
-          <Droppable className="page-content" droppableId="content" isCombineEnabled>
-            {(provided, snapshot) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="pages-list"
-              >
-                {
-                  visiblePages.map(({ key, level}, index) => {
-                    const page = pages[key];
-                    return(
-                      <Draggable key={key} draggableId={key} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={classNames('page-item', { active: key === activeId })}
-                            style={{ ...provided.draggableProps.style, paddingLeft: `${level * 20}px`}}
-                            key={key}
-                            onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
-                          >
-                            <Icon className="dropdown-caret" icon={collapsed[index] ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(index)} />
-                            <EditableText
-                              className="page-name"
-                              text={page.name}
-                              onBlur={onEndEdit(key)}
-                              onChange={onEditName(key)}
-                              isEditable={editingNames.has(key)} />
-                            <Icon className="add-subpage" icon="plus" onClick={onAdd(key)} />
-                            <Popover
-                              isOpen={openMenus.has(key)}
-                              position={'bottom'} // preferred position
-                              content={<PopoverMenu options={getMenuOptions(key)} />}
-                              onClickOutside={onToggleMenu(key)}
+    <div className="sidebar" style={{ width }}>
+      <div className="sidebar-content">
+        <div className="header">D&D Manager</div>
+        <div className="pages-header">Your Pages</div>
+        <div className="pages">
+          <DragDropContext onDragStart={handleDragStart(collapsed)} onDragEnd={handleReorderPages(visiblePages, collapsed, levels)}>
+            <Droppable className="page-content" droppableId="content" isCombineEnabled>
+              {(provided, snapshot) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="pages-list"
+                >
+                  {
+                    visiblePages.map(({ key, level}, index) => {
+                      const page = pages[key];
+                      return(
+                        <Draggable key={key} draggableId={key} index={index}>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={classNames('page-item', { active: key === activeId })}
+                              style={{ ...provided.draggableProps.style, paddingLeft: `${level * 20}px`}}
+                              key={key}
+                              onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
                             >
-                              <Icon className="menu" icon="ellipsis-v" onClick={onToggleMenu(key)}/>
-                            </Popover>
-                            <Icon className="grip" icon="grip-lines" draggable {...provided.dragHandleProps} />
-                          </div>
-                        )}
-                      </Draggable>
-                    );
-                  })
-                }
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+                              <Icon className="dropdown-caret" icon={collapsed[index] ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(index)} />
+                              <EditableText
+                                className="page-name"
+                                text={page.name}
+                                onBlur={onEndEdit(key)}
+                                onChange={onEditName(key)}
+                                isEditable={editingNames.has(key)} />
+                              <Icon className="add-subpage" icon="plus" onClick={onAdd(key)} />
+                              <Popover
+                                isOpen={openMenus.has(key)}
+                                position={'bottom'} // preferred position
+                                content={<PopoverMenu options={getMenuOptions(key)} />}
+                                onClickOutside={onToggleMenu(key)}
+                              >
+                                <Icon className="menu" icon="ellipsis-v" onClick={onToggleMenu(key)}/>
+                              </Popover>
+                              <Icon className="grip" icon="grip-lines" draggable {...provided.dragHandleProps} />
+                            </div>
+                          )}
+                        </Draggable>
+                      );
+                    })
+                  }
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+        <Button className="add-page" value="Add New Page" onClick={onAdd()} />
+        <Importer />
       </div>
-      <Button className="add-page" value="Add New Page" onClick={onAdd()} />
-      <Importer />
+      <div className="sidebar-drag-handle" draggable onDragEnd={e => dispatch(settingsSetSidebarWidth(e.clientX))} />
     </div>
   );
 };

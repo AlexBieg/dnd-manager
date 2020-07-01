@@ -1,69 +1,84 @@
-.sidebar {
+.sidebar{
   display: flex;
-  flex-direction: column;
-  max-width: 250px;
-  background-color: #ececec;
-  width: 50%;
-  padding: 10px;
 
-  .header {
-    font-weight: bold;
-    margin-bottom: 40px;
-  }
+  .sidebar-drag-handle {
+    background: #cecece;
+    width: 4px;
+    height: 100%;
 
-  .pages-header {
-    font-weight: bold;
-  }
-
-  .pages {
-    flex: 1;
-    overflow: scroll;
-    .pages-list {
-      overflow: scroll;
+    &:hover {
+      cursor: ew-resize;
     }
-    .page-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      width: fit-content;
-      min-width: -webkit-fill-available;
+  }
 
-      &.active {
-        background: #cecece;
+  .sidebar-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ececec;
+    width: 50%;
+    padding: 10px;
+    overflow: hidden;
+
+    .header {
+      font-weight: bold;
+      margin-bottom: 40px;
+    }
+
+    .pages-header {
+      font-weight: bold;
+    }
+
+    .pages {
+      flex: 1;
+      overflow: scroll;
+      .pages-list {
+        overflow: scroll;
       }
+      .page-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        width: fit-content;
+        min-width: -webkit-fill-available;
 
-      &:hover {
-        background: #cecece;
-        cursor: pointer;
+        &.active {
+          background: #cecece;
+        }
+
+        &:hover {
+          background: #cecece;
+          cursor: pointer;
+
+          .menu, .add-subpage, .grip {
+            opacity: 1;
+          }
+        }
 
         .menu, .add-subpage, .grip {
-          opacity: 1;
+          opacity: 0;
+          color: #a0a0a0;
+        }
+
+        .dropdown-caret {
+          width: 20px;
+        }
+
+        .menu {
+          padding: 0px 5px;
+        }
+
+        .page-name {
+          width: 100%;
+          margin-left: 10px;
+          margin-right: 10px;
         }
       }
-
-      .menu, .add-subpage, .grip {
-        opacity: 0;
-        color: #a0a0a0;
-      }
-
-      .dropdown-caret {
-        width: 20px;
-      }
-
-      .menu {
-        padding: 0px 5px;
-      }
-
-      .page-name {
-        width: 100%;
-        margin-left: 10px;
-        margin-right: 10px;
-      }
     }
-  }
 
-  .add-page {
-    margin-top: 20px;
+    .add-page {
+      margin-top: 20px;
+    }
   }
 }
