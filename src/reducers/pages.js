@@ -51,7 +51,7 @@ export const pagesSetActivePage = (id) => {
   };
 };
 
-export const pagesAddPage = (id) => {
+export const pagesAddPage = (id=null) => {
   return {
     type: PAGES_ADD_PAGE,
     data: id,
@@ -94,6 +94,13 @@ const pages = (state=INITIAL_STATE, { type, data}) => {
       if (data.length !== Object.keys(state.pages).length) {
         data = Object.keys(state.pages);
       }
+      // fix Pages
+      Object.values(state.pages).forEach(p => {
+        if (p.parent && !state.pages[p.parent]) {
+          p.parent = null;
+        }
+      });
+
       return {
         ...state,
         pageOrder: data,
@@ -109,9 +116,12 @@ const pages = (state=INITIAL_STATE, { type, data}) => {
         ...state,
         pages: {
           ...state.pages,
-          [newId]: { ...INTIAL_PAGE },
+          [newId]: {
+            ...INTIAL_PAGE,
+            parent: data,
+          },
         },
-        levels: [...state.levels, { key: newId, level: 1 }]
+        pageOrder: [...state.pageOrder, newId]
       };
     case PAGES_DELETE_PAGE:
       return {
@@ -120,7 +130,7 @@ const pages = (state=INITIAL_STATE, { type, data}) => {
         pages: {
           ...omit(state.pages, data),
         },
-        levels: state.levels.filter(l => l.key !== data),
+        pageOrder: state.pageOrder.filter(p => p !== data),
       };
     case PAGES_EDIT_PAGE:
       return {

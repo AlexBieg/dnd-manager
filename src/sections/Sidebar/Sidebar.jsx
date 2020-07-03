@@ -117,6 +117,13 @@ const Sidebar = () => {
     dispatch(pagesSetPageOrder(levels.map(l => l.key)));
   }
 
+  levels.forEach(({ name, key }) => {
+    if ((!name || name.length === 0) && !editingNames.has(key)) {
+      editingNames.add(key);
+      setEditingNames(new Set(editingNames));
+    }
+  });
+
   return (
     <div className="sidebar" style={{ width }}>
       <div className="sidebar-content">
