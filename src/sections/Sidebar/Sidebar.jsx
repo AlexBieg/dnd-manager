@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
 import Popover from 'react-tiny-popover'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { arrayMove } from 'react-sortable-hoc';
-import { get } from 'lodash';
+import { get, isEqual } from 'lodash';
 import {
   getPages,
-  getLevels,
   getActivePageId,
   pagesSetActivePage,
   pagesAddPage,
   pagesDeletePage,
   pagesEditPage,
-  pagesSetLevels,
+  pagesSetPageOrder,
+  getPageOrder,
 } from 'reducers/pages';
 import { getSidebarWidth, settingsSetSidebarWidth } from 'reducers/settings';
 import Button from 'components/Button';
@@ -23,17 +23,31 @@ import EditableText from 'components/EditableText';
 import Importer from 'sections/Importer';
 import './Sidebar.scss';
 
+const buildLevels = (pages, pageOrder, parent=null, level=1, parentCollapsed=false) => {
+  let levels = [];
+
+  pageOrder.forEach((id) => {
+    const page = pages[id];
+    // if the current parent is the page's parent or both are missing
+    if (page.parent === parent || (!parent && !page.parent)) {
+      levels.push({ ...page, level, key: id, visible: !parentCollapsed });
+      levels = [...levels, ...buildLevels(pages, pageOrder, id, level + 1, parentCollapsed || page.collapsed)]
+    }
+  });
+
+  return levels;
+}
+
 
 const Sidebar = () => {
   const dispatch = useDispatch();
   const pages = useSelector(getPages);
-  const levels = useSelector(getLevels);
+  const pageOrder = useSelector(getPageOrder);
   const width = useSelector(getSidebarWidth);
 
   const activeId = useSelector(getActivePageId)
   const [openMenus, setOpenMenus] = useState(new Set());
   const [editingNames, setEditingNames] = useState(new Set());
-  const [collapsed, setCollapsed] = useState(levels.map(() => false));
 
 
   const onAdd = (id) => (event) => {
@@ -67,41 +81,28 @@ const Sidebar = () => {
     }))
   }
 
-  const onToggleDropdown = (index) => (event) => {
-    const newCollapsed = [...collapsed];
-    newCollapsed[index] = !newCollapsed[index];
-    setCollapsed(newCollapsed);
+  const onToggleDropdown = (id) => (e) => {
+    e.stopPropagation();
+    dispatch(pagesEditPage(id, { ...pages[id], collapsed: !pages[id].collapsed }));
   }
 
-  const handleReorderPages = (visible, collapsed, oldLevels) => ({ combine, source, destination, ...reset}) => {
+  const handleReorderPages = useCallback(({ combine, source, destination, draggableId }) => {
     const startIndex = source.index;
-
     if (combine) {
-      const combIndex = oldLevels.findIndex((l) => l.key === combine.draggableId);
-      const newLevels = arrayMove(oldLevels, startIndex, combIndex);
-      newLevels[combIndex] = {
-        ...newLevels[combIndex ],
-        level: newLevels[combIndex - 1].level + 1,
-      }
-      dispatch(pagesSetLevels(newLevels));
+      const parentId = combine.draggableId;
+      dispatch(pagesEditPage(draggableId, { ...pages[draggableId], parent: parentId }))
       return;
     }
 
     const endIndex = destination.index;
 
-    const newLevels = arrayMove(visible, startIndex, endIndex);
+    const newPageOrder = arrayMove(pageOrder, startIndex, endIndex)
 
-    newLevels[endIndex] = {
-      ...newLevels[endIndex],
-      level: get(newLevels, endIndex + 1, { level: 1 }).level,
-    };
+    dispatch(pagesSetPageOrder(newPageOrder));
 
-    dispatch(pagesSetLevels(newLevels));
-  }
-
-  const handleDragStart = (c) => () => {
-    setCollapsed(c.map(() => false));
-  }
+    const belowItemsParent = get(pages, [newPageOrder[endIndex + 1], 'parent'], null);
+    dispatch(pagesEditPage(draggableId, { ...pages[draggableId], parent: belowItemsParent }));
+  }, [dispatch, pageOrder, pages]);
 
   const getMenuOptions = (id) => {
     return [
@@ -110,85 +111,66 @@ const Sidebar = () => {
     ];
   };
 
-  let visibleLevel = null;
-  const visiblePages = levels.reduce((acc, p, i) => {
-    if (visibleLevel && p.level <= visibleLevel) {
-      visibleLevel = null;
-    }
+  const levels = buildLevels(pages, pageOrder);
 
-    if (visibleLevel && p.level > visibleLevel) {
-      return acc;
-    }
-
-    if (!visibleLevel && collapsed[i]) {
-      visibleLevel = p.level;
-    }
-
-    acc.push(p);
-
-    if (!pages[p.key].name && !editingNames.has(p.key)) {
-      onStartEdit(p.key)();
-    }
-    return acc;
-  }, []);
+  if (!isEqual(pageOrder, levels.map(l => l.key))) {
+    dispatch(pagesSetPageOrder(levels.map(l => l.key)));
+  }
 
   return (
     <div className="sidebar" style={{ width }}>
       <div className="sidebar-content">
         <div className="header">D&D Manager</div>
         <div className="pages-header">Your Pages</div>
-        <div className="pages">
-          <DragDropContext onDragStart={handleDragStart(collapsed)} onDragEnd={handleReorderPages(visiblePages, collapsed, levels)}>
-            <Droppable className="page-content" droppableId="content" isCombineEnabled>
-              {(provided, snapshot) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  className="pages-list"
-                >
-                  {
-                    visiblePages.map(({ key, level}, index) => {
-                      const page = pages[key];
-                      return(
-                        <Draggable key={key} draggableId={key} index={index}>
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className={classNames('page-item', { active: key === activeId })}
-                              style={{ ...provided.draggableProps.style, paddingLeft: `${level * 20}px`}}
-                              key={key}
-                              onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
+        <DragDropContext onDragEnd={handleReorderPages}>
+          <Droppable className="page-content" droppableId="content" isCombineEnabled>
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="pages-list"
+              >
+                {
+                  levels.map(({ key, collapsed, name, level, visible }, index) => {
+                    return(
+                      <Draggable key={key} draggableId={key} index={index}>
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={classNames('page-item', { active: key === activeId, hidden: !visible })}
+                            style={{ ...provided.draggableProps.style, paddingLeft: `${level * 20}px`}}
+                            key={key}
+                            onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
+                          >
+                            <Icon className="dropdown-caret" icon={collapsed ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(key)} />
+                            <EditableText
+                              className="page-name"
+                              text={name}
+                              onBlur={onEndEdit(key)}
+                              onChange={onEditName(key)}
+                              isEditable={editingNames.has(key)} />
+                            <Icon className="add-subpage" icon="plus" onClick={onAdd(key)} />
+                            <Popover
+                              isOpen={openMenus.has(key)}
+                              position={'bottom'} // preferred position
+                              content={<PopoverMenu options={getMenuOptions(key)} />}
+                              onClickOutside={onToggleMenu(key)}
                             >
-                              <Icon className="dropdown-caret" icon={collapsed[index] ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(index)} />
-                              <EditableText
-                                className="page-name"
-                                text={page.name}
-                                onBlur={onEndEdit(key)}
-                                onChange={onEditName(key)}
-                                isEditable={editingNames.has(key)} />
-                              <Icon className="add-subpage" icon="plus" onClick={onAdd(key)} />
-                              <Popover
-                                isOpen={openMenus.has(key)}
-                                position={'bottom'} // preferred position
-                                content={<PopoverMenu options={getMenuOptions(key)} />}
-                                onClickOutside={onToggleMenu(key)}
-                              >
-                                <Icon className="menu" icon="ellipsis-v" onClick={onToggleMenu(key)}/>
-                              </Popover>
-                              <Icon className="grip" icon="grip-lines" draggable {...provided.dragHandleProps} />
-                            </div>
-                          )}
-                        </Draggable>
-                      );
-                    })
-                  }
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
-        </div>
+                              <Icon className="menu" icon="ellipsis-v" onClick={onToggleMenu(key)}/>
+                            </Popover>
+                            <Icon className="grip" icon="grip-lines" draggable {...provided.dragHandleProps} />
+                          </div>
+                        )}
+                      </Draggable>
+                    );
+                  })
+                }
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
         <Button className="add-page" value="Add New Page" onClick={onAdd()} />
         <Importer />
       </div>

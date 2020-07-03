@@ -152,7 +152,7 @@ const Page = ({ pageId }) => {
               {...provided.droppableProps}
               ref={provided.innerRef}
             >
-              {page.content.map((c, i) => (
+              {(page.content || []).map((c, i) => (
                 <Draggable key={c.id} draggableId={c.id} index={i}>
                   {(provided, snapshot) => (
                     <div

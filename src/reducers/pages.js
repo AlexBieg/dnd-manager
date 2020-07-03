@@ -10,11 +10,6 @@ export const getPages = createSelector(
   (pagesSect) => pagesSect.pages,
 );
 
-export const getLevels = createSelector(
-  getPagesSection,
-  (pagesSect) => pagesSect.levels,
-)
-
 export const getPagesArray = createSelector(
   getPages,
   (pages) => Object.entries(pages).map(([id, p]) => ({ ...p, id, })),
@@ -31,20 +26,23 @@ export const getActivePage = createSelector(
   (pages, id) => pages[id],
 );
 
+export const getPageOrder = createSelector(
+  getPagesSection,
+  (pagesSect) => pagesSect.pageOrder
+)
+
 // Actions
 const PAGES_SET_ACTIVE_PAGE = 'PAGES_SET_ACTIVE_PAGE';
 const PAGES_ADD_PAGE = 'PAGES_ADD_PAGE';
 const PAGES_DELETE_PAGE = 'PAGES_DELETE_PAGE';
 const PAGES_EDIT_PAGE = 'PAGES_EDIT_PAGE';
-const PAGES_SET_LEVELS = 'PAGES_SET_LEVELS';
+const PAGES_SET_PAGE_ORDER = 'PAGES_SET_PAGE_ORDER';
 
 // Action Creators
-export const pagesSetLevels = (newLevels) => {
-  return {
-    type: PAGES_SET_LEVELS,
-    data: newLevels,
-  }
-}
+export const pagesSetPageOrder = (order) => ({
+  type: PAGES_SET_PAGE_ORDER,
+  data: order,
+});
 
 export const pagesSetActivePage = (id) => {
   return {
@@ -79,21 +77,26 @@ export const pagesEditPage = (id, data) => {
 const INTIAL_PAGE = {
   name: '',
   content: [],
+  parent: null,
+  collapsed: false,
 }
 
 // Initial State
 const INITIAL_STATE = {
   activePageId: null,
   pages: {},
-  levels: [],
+  pageOrder: [],
 }
 // Reducer
 const pages = (state=INITIAL_STATE, { type, data}) => {
   switch (type) {
-    case PAGES_SET_LEVELS:
+    case PAGES_SET_PAGE_ORDER:
+      if (data.length !== Object.keys(state.pages).length) {
+        data = Object.keys(state.pages);
+      }
       return {
         ...state,
-        levels: data,
+        pageOrder: data,
       }
     case PAGES_SET_ACTIVE_PAGE:
       return {
