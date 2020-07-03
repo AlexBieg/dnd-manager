@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { getPages, pagesEditPage } from 'reducers/pages';
+import {
+  getPages,
+  pagesEditPage,
+  pagesSetActivePage,
+  getPagePathUtil
+} from 'reducers/pages';
 import Editor from 'components/Editor';
 import { v4 as uuidV4 } from 'uuid';
 import Popover from 'react-tiny-popover';
@@ -16,7 +21,8 @@ import './Page.scss';
 const tableIdRegex = /^@@([a-zA-Z0-9-]+)@@$/;
 
 const Page = ({ pageId }) => {
-  const page = useSelector(getPages)[pageId];
+  const pages = useSelector(getPages);
+  const page = pages[pageId];
   const dispatch = useDispatch();
   const [focusRow, setFocusRow] = useState(null);
   const [menuOpen, setMenuOpen] = useState([]);
@@ -139,6 +145,8 @@ const Page = ({ pageId }) => {
     }));
   }
 
+  const onHandlePageClick = (id) => () => dispatch(pagesSetActivePage(id));
+
   if (!page) {
     return <div>Looks like you don't have a page selected</div>
   }
@@ -146,6 +154,11 @@ const Page = ({ pageId }) => {
   return (
     <div className="page" id="page">
       <RecordViewer />
+      <div className="page-path">
+        {getPagePathUtil(pageId, pages).reverse().map(p => (
+          <span key={p} onClick={onHandlePageClick(p)}>{pages[p].name}</span>
+        ))}
+      </div>
       <div className="page-header">{page.name}</div>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable className="page-content" droppableId="content">

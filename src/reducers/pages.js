@@ -2,6 +2,19 @@ import { createSelector } from 'reselect';
 import { v4 as uuidV4 } from 'uuid';
 import { omit } from 'lodash';
 
+// Utils
+export const getPagePathUtil = (pageId, pages) => {
+  let parent = pages[pageId].parent;
+  const path = [];
+
+  while (parent) {
+    path.push(parent);
+    parent = pages[parent].parent;
+  }
+
+  return path;
+}
+
 // Selectors
 export const getPagesSection = (state) => state.pages;
 

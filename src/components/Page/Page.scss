@@ -3,6 +3,30 @@
   flex-direction: column;
   overflow: auto;
 
+  .page-path {
+    padding: 20px 20px 0px 20px;
+    color: gray;
+
+    span {
+      margin-right: 10px;
+
+      &::after {
+        content: '/';
+        color: gray;
+        margin-left: 10px;
+      }
+
+      &:last-child::after {
+        content: '';
+      }
+
+      &:hover {
+        color: black;
+        cursor: pointer;
+      }
+    }
+  }
+
   .page-header {
     font-weight: bold;
     font-size: 30px;

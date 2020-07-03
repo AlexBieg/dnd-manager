@@ -5,8 +5,8 @@ import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import classNames from 'classnames';
 import { connect } from 'react-redux';
 import fuzzysort from 'fuzzysort';
-import { getRecords, tablesSetActiveRecord } from 'reducers/tables';
-import { getPages, pagesSetActivePage, getActivePageId } from 'reducers/pages';
+import { getRecords, getTables, tablesSetActiveRecord } from 'reducers/tables';
+import { getPages, pagesSetActivePage, getActivePageId, getPagePathUtil } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 
 import './Editor.scss';
@@ -458,7 +458,7 @@ class CustomEditor extends Component {
   }
 
   render() {
-    const { value, className, onFocus } = this.props;
+    const { value, className, onFocus, pages, tables } = this.props;
     const { editor, pageMatches, recordMatches, portalRef, selectIndex } = this.state;
 
 
@@ -491,12 +491,18 @@ class CustomEditor extends Component {
               >
                 {
                   pageMatches.slice(0, 5).map((p, i) => (
-                    <div key={p.key} className={classNames('editor-popover-item', { selected: selectIndex === i})}>{p.name}</div>
+                    <div key={p.key} className={classNames('editor-popover-item', { selected: selectIndex === i})}>
+                      <span className="editor-popover-item-path">{getPagePathUtil(p.key, pages).reverse().map(p => pages[p].name + '/')}</span>
+                      <span className="editor-popover-item-name">{p.name}</span>
+                    </div>
                   ))
                 }
                 {
                   recordMatches.slice(0, 5).map((r, i) => (
-                    <div key={r.__id} className={classNames('editor-popover-item', { selected: selectIndex === i})}>{r.name}</div>
+                    <div key={r.__id} className={classNames('editor-popover-item', { selected: selectIndex === i})}>
+                      <span className="editor-popover-item-table">{tables[r.__tableId].name}:</span>
+                      <span className="editor-popover-item-name">{r.name}</span>
+                    </div>
                   ))
                 }
               </div>
@@ -512,6 +518,7 @@ const mapStateToProps = (state) => ({
   records: getRecords(state),
   pages: getPages(state),
   pageId: getActivePageId(state),
+  tables: getTables(state),
 });
 
 

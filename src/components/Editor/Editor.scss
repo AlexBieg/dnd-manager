@@ -10,8 +10,22 @@
   overflow: scroll;
 
   .editor-popover-item {
+    color: #cecece;
+
     &.selected {
-      background-color: #ececec;;
+      background-color: #ececec;
+    }
+
+    .editor-popover-item-name {
+      color: black;
+    }
+
+    .editor-popover-item-path, .editor-popover-item-table {
+      color: #cecece;
+    }
+
+    .editor-popover-item-table {
+      margin-right: 5px;
     }
   }
 }
