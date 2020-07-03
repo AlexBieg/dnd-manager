@@ -41,8 +41,10 @@ const Page = ({ pageId }) => {
     setMenuOpen(menuOpen.filter(m => m !== index));
   }
 
-  const onFocus = (index) => (event) => {
-    setFocusRow(null);
+  const onFocus = () => {
+    setTimeout(() => {
+      setFocusRow(null);
+    }, 0);
   }
 
   const handleNext = (index) => (e) => {
@@ -183,7 +185,7 @@ const Page = ({ pageId }) => {
                           onNext={handleNext(i)}
                           onDelete={onDeleteContent(i)}
                           value={c.content}
-                          onFocus={onFocus(i)}
+                          onFocus={onFocus}
                           focus={i === focusRow}
                           onChange={onChangeContent(i)} />
                       }

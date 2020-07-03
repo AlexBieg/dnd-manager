@@ -198,6 +198,7 @@ class CustomEditor extends Component {
     onBlur: () => {},
     onChange: () => {},
     onDelete: () => {},
+    onFocus: () => {},
   }
 
   constructor(props) {
@@ -457,7 +458,7 @@ class CustomEditor extends Component {
   }
 
   render() {
-    const { value, className } = this.props;
+    const { value, className, onFocus } = this.props;
     const { editor, pageMatches, recordMatches, portalRef, selectIndex } = this.state;
 
 
@@ -479,6 +480,7 @@ class CustomEditor extends Component {
             renderLeaf={this.renderLeaf}
             onKeyDown={this.onKeyDown}
             onBlur={this.handleBlur}
+            onFocus={onFocus}
           />
           {
             (pageMatches.length || recordMatches.length) > 0 &&
