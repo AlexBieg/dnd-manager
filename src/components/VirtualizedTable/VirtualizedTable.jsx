@@ -95,11 +95,23 @@ const HeaderCell = SortableElement(({
             }} />
           {
             (filterValue.type === 'includes' || !filterValue.type) &&
-              <Icon icon="dot-circle" onClick={() => onChangeFilters(column.name, { term: filterTerm, type: 'exact' })} />
+              <Icon icon="dot-circle" onClick={() => onChangeFilters(column.name, { ...filterValue, type: 'exact' })} />
           }
           {
             filterValue.type === 'exact' &&
-            <Icon icon="circle" onClick={() => onChangeFilters(column.name, { term: filterTerm, type: 'includes' })} />
+            <Icon icon="circle" onClick={() => onChangeFilters(column.name, { ...filterValue, type: 'includes' })} />
+          }
+          {
+            filterValue.sort === 'asc' &&
+            <Icon icon="sort-up" onClick={() => onChangeFilters(column.name, { ...filterValue, sort: 'desc' })} />
+          }
+          {
+            filterValue.sort === 'desc' &&
+            <Icon icon="sort-down" onClick={() => onChangeFilters(column.name, { ...filterValue, sort: null })} />
+          }
+          {
+            !filterValue.sort &&
+            <Icon icon="sort" onClick={() => onChangeFilters(column.name, { ...filterValue, sort: 'asc' })} />
           }
         </div>
       </div>
@@ -234,8 +246,14 @@ class VirtualizedTable extends React.Component {
   }
 
   getFilteredRecordsFromFilters = (records, filters) => {
+    const sorts = {};
     const r = records.filter((r) => {
-      return Object.entries(filters).every(([cName, { term, type }]) => {
+      return Object.entries(filters).every(([cName, { term, type, sort }]) => {
+        // add sorts for later
+        if (sort) {
+          sorts[cName] = sort;
+        }
+
         let text;
         if (typeof r[cName] === 'object') {
           text = r[cName].map(n => Node.string(n))[0];
@@ -254,15 +272,35 @@ class VirtualizedTable extends React.Component {
       });
     });
 
+    const sortArray = Object.entries(sorts);
+    if (sortArray.length) {
+      r.sort((a, b) => {
+        for (let i = 0; i < sortArray.length; i++) {
+          const [column, sortDir] = sortArray[i];
+
+          const aText = typeof a[column] === 'string' ? a[column] : a[column].map(n => Node.string(n))[0];
+          const bText = typeof b[column] === 'string' ? b[column] : b[column].map(n => Node.string(n))[0];
+          const diff = sortDir === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+
+          if (diff !== 0) {
+            return diff;
+          }
+        }
+
+        return 0;
+      });
+    }
+
     return r;
   }
 
-  onSetFilters = (columnName, { term='', type }) => {
+  onSetFilters = (columnName, { term='', type, ...rest }) => {
     const { records } = this.props;
     const { filters } = this.state;
     const newFilters = {
       ...filters,
       [columnName]: {
+        ...rest,
         term,
         type: type || 'includes',
       },
