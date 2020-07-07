@@ -158,7 +158,6 @@ const Page = ({ pageId }) => {
     return <div>Looks like you don't have a page selected</div>
   }
 
-  console.log(nextPages, previousPages);
   return (
     <div className="page" id="page">
       <RecordViewer />

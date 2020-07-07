@@ -26,7 +26,6 @@ import Popover from 'components/Popover';
 
 import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
-import { useEffect } from 'react';
 
 const HeaderDragHandle = SortableHandle(() => (
   <Icon
@@ -286,7 +285,16 @@ class VirtualizedTable extends React.Component {
 
           const aText = typeof a[column] === 'string' ? a[column] : (a[column] || []).map(n => Node.string(n))[0] || '';
           const bText = typeof b[column] === 'string' ? b[column] : (b[column] || []).map(n => Node.string(n))[0] || '';
-          const diff = sortDir === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+          const aNum = parseFloat(aText);
+          const bNum = parseFloat(bText);
+
+          let diff;
+          if (!isNaN(aNum) && !isNaN(bNum)) {
+            return sortDir === 'asc' ? aNum - bNum : bNum - aNum;
+          } else {
+            diff = sortDir === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
+          }
+
 
           if (diff !== 0) {
             return diff;
