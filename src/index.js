@@ -13,7 +13,7 @@ const electron = window.require('electron');
 const ipcRenderer  = electron.ipcRenderer;
 
 // User data saving middleware
-const toOmitFromStore = ['rolls'];
+const toOmitFromStore = ['rolls', 'pages.previousActivePages', 'pages.nextActivePages'];
 const saver = store => next => action => {
   let result = next(action)
   ipcRenderer.send('save-user-data', JSON.stringify(omit(store.getState(), toOmitFromStore)));

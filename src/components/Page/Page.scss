@@ -3,8 +3,32 @@
   flex-direction: column;
   overflow: auto;
 
-  .page-path {
+  .page-navigation {
     padding: 20px 20px 0px 20px;
+    color: gray;
+
+    i:hover {
+      color: black;
+      cursor: pointer;
+    }
+
+    i:first-child {
+      margin-right: 15px;
+    }
+
+    .disabled {
+      color: #ececec;
+      pointer-events: none;
+
+      &:hover {
+        color: #ececec;
+        cursor: default;
+      }
+    };
+  }
+
+  .page-path {
+    padding: 10px 20px 0px 20px;
     color: gray;
 
     span {

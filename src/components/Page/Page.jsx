@@ -4,7 +4,11 @@ import {
   getPages,
   pagesEditPage,
   pagesSetActivePage,
-  getPagePathUtil
+  getPagePathUtil,
+  getNextPages,
+  getPreviousPages,
+  pagesGoBack,
+  pagesGoForward,
 } from 'reducers/pages';
 import Editor from 'components/Editor';
 import { v4 as uuidV4 } from 'uuid';
@@ -15,6 +19,7 @@ import TableSelector from 'components/TableSelector';
 import Table from 'components/VirtualizedTable';
 import RecordViewer from 'components/RecordViewer';
 import { useSelector, useDispatch } from 'react-redux';
+import classNames from 'classnames';
 
 import './Page.scss';
 
@@ -22,6 +27,8 @@ const tableIdRegex = /^@@([a-zA-Z0-9-]+)@@$/;
 
 const Page = ({ pageId }) => {
   const pages = useSelector(getPages);
+  const nextPages = useSelector(getNextPages);
+  const previousPages = useSelector(getPreviousPages);
   const page = pages[pageId];
   const dispatch = useDispatch();
   const [focusRow, setFocusRow] = useState(null);
@@ -151,9 +158,14 @@ const Page = ({ pageId }) => {
     return <div>Looks like you don't have a page selected</div>
   }
 
+  console.log(nextPages, previousPages);
   return (
     <div className="page" id="page">
       <RecordViewer />
+      <div className="page-navigation">
+        <Icon className={classNames({ disabled: previousPages.length === 0 })} icon="chevron-left" onClick={() => dispatch(pagesGoBack())}/>
+        <Icon className={classNames({ disabled: nextPages.length === 0 })} icon="chevron-right" onClick={() => dispatch(pagesGoForward())}/>
+      </div>
       <div className="page-path">
         {getPagePathUtil(pageId, pages).reverse().map(p => (
           <span key={p} onClick={onHandlePageClick(p)}>{pages[p].name}</span>

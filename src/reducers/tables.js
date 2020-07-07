@@ -22,7 +22,12 @@ export const getRecordsByTableId = (id) => createSelector(
   getTableById(id),
   getRecords,
   (table, records) => get(table, 'rows', []).map(r => records[r])
-)
+);
+
+export const getFiltersByTableId = (id) => createSelector(
+  getTableById(id),
+  (table) => get(table, 'filters', {}),
+);
 
 export const getActiveRecord = createSelector(
   getTablesSection,
@@ -45,6 +50,7 @@ const TABLES_DEL_COL = 'TABLES_DEL_COL';
 const TABLES_EDIT_COL = 'TABLES_EDIT_COL';
 
 const TABLES_EDIT_NAME = 'TABLES_EDIT_NAME';
+const TABLES_SET_FILTERS = 'TABLES_SET_FILTERS';
 const TABLES_CREATE_TABLE = 'TABLES_CREATE_TABLE';
 const TABLES_DELETE_TABLE = 'TABLES_DELETE_TABLE';
 const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
@@ -52,6 +58,14 @@ const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
 const TABLES_SET_ACTIVE_RECORD = 'TABLES_SET_ACTIVE_RECORD';
 
 // Action Creators
+export const tablesSetFilters = (id, filters) => ({
+  type: TABLES_SET_FILTERS,
+  data: {
+    id,
+    filters,
+  }
+})
+
 export const tablesSetActiveRecord = (id) => {
   return {
     type: TABLES_SET_ACTIVE_RECORD,
@@ -208,6 +222,17 @@ const INITIAL_STATE = {
 const tables = (state=INITIAL_STATE, { type, data }) => {
   let rows;
   switch (type) {
+    case TABLES_SET_FILTERS:
+      return {
+        ...state,
+        tables: {
+          ...state.tables,
+          [data.id]: {
+            ...state.tables[data.id],
+            filters: { ...data.filters },
+          }
+        }
+      }
     case TABLES_SET_ACTIVE_RECORD:
       return {
         ...state,

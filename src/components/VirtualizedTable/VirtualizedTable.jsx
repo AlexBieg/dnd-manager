@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { connect, useDispatch } from 'react-redux';
+import React, { useState, useCallback } from 'react';
+import { connect, useDispatch, useSelector } from 'react-redux';
 import { arrayMove, SortableHandle } from 'react-sortable-hoc';
 import { debounce } from 'lodash';
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
@@ -14,6 +14,8 @@ import {
   tableEditCols,
   tableEditName,
   tablesOrderRows,
+  getFiltersByTableId,
+  tablesSetFilters,
 } from 'reducers/tables';
 import { Node } from 'slate'
 import Editor from 'components/Editor';
@@ -24,6 +26,7 @@ import Popover from 'components/Popover';
 
 import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
+import { useEffect } from 'react';
 
 const HeaderDragHandle = SortableHandle(() => (
   <Icon
@@ -34,17 +37,25 @@ const HeaderDragHandle = SortableHandle(() => (
 
 const HeaderCell = SortableElement(({
   value,
-  onChangeFilters,
-  filterValue={},
   deleteable,
   column,
   table,
   tableId
 }) => {
   const [dragStart, setDragStart] = useState(null);
-  const [filterTerm, setFilterTerm] = useState(filterValue.term || '');
+  const filters = useSelector(getFiltersByTableId(tableId));
+  const [filter, setFilter] = useState(filters[column.name] || {});
   const dispatch = useDispatch();
-  const debouncedOnChangeFilters = debounce(onChangeFilters, 500);
+  const debouncedDispatch = useCallback(debounce(dispatch, 500), [dispatch]);
+
+  const onChangeFilters = useCallback((col, fil) => {
+    setFilter(fil);
+    dispatch(tablesSetFilters(tableId, {...filters, [col]: fil }));
+  }, [dispatch, filters, tableId]);
+
+  const debouncedOnChangeFilters = useCallback((col, fil) => {
+    debouncedDispatch(tablesSetFilters(tableId, { ...filters, [col]: fil }))
+  }, [debouncedDispatch, filters, tableId]);
 
   const onChangeColumnName = (newName) => {
     const newCols = table.columns.map((c) => ({
@@ -87,31 +98,31 @@ const HeaderCell = SortableElement(({
           <Input
             className="v-table-filter"
             placeholder="Filter..."
-            value={filterTerm}
+            value={filter.term || ''}
             onChange={e => {
               const val = e.target.value || '';
-              setFilterTerm(val);
-              debouncedOnChangeFilters(column.name, { term: val, type: filterValue.type });
+              setFilter({ ...filter, term: val });
+              debouncedOnChangeFilters(column.name, { ...filter, term: val });
             }} />
           {
-            (filterValue.type === 'includes' || !filterValue.type) &&
-              <Icon icon="dot-circle" onClick={() => onChangeFilters(column.name, { ...filterValue, type: 'exact' })} />
+            (filter.type === 'includes' || !filter.type) &&
+            <Icon icon="dot-circle" onClick={() => onChangeFilters(column.name, { ...filter, type: 'exact' })} />
           }
           {
-            filterValue.type === 'exact' &&
-            <Icon icon="circle" onClick={() => onChangeFilters(column.name, { ...filterValue, type: 'includes' })} />
+            filter.type === 'exact' &&
+            <Icon icon="circle" onClick={() => onChangeFilters(column.name, { ...filter, type: 'includes' })} />
           }
           {
-            filterValue.sort === 'asc' &&
-            <Icon icon="sort-up" onClick={() => onChangeFilters(column.name, { ...filterValue, sort: 'desc' })} />
+            filter.sort === 'asc' &&
+            <Icon icon="sort-up" onClick={() => onChangeFilters(column.name, { ...filter, sort: 'desc' })} />
           }
           {
-            filterValue.sort === 'desc' &&
-            <Icon icon="sort-down" onClick={() => onChangeFilters(column.name, { ...filterValue, sort: null })} />
+            filter.sort === 'desc' &&
+            <Icon icon="sort-down" onClick={() => onChangeFilters(column.name, { ...filter, sort: null })} />
           }
           {
-            !filterValue.sort &&
-            <Icon icon="sort" onClick={() => onChangeFilters(column.name, { ...filterValue, sort: 'asc' })} />
+            !filter.sort &&
+            <Icon icon="sort" onClick={() => onChangeFilters(column.name, { ...filter, sort: 'asc' })} />
           }
         </div>
       </div>
@@ -119,7 +130,7 @@ const HeaderCell = SortableElement(({
   );
 })
 
-const HeaderRow = SortableContainer(({ tableId, table, filters, onChangeFilters }) => (
+const HeaderRow = SortableContainer(({ tableId, table }) => (
   <tr>
     {
       table.columns.map((c, columnIndex) => (
@@ -131,8 +142,6 @@ const HeaderRow = SortableContainer(({ tableId, table, filters, onChangeFilters 
           table={table}
           tableId={tableId}
           deleteable={table.idColumn !== table.columns[columnIndex].name}
-          onChangeFilters={onChangeFilters}
-          filterValue={filters[table.columns[columnIndex].name]}
         />
       ))
     }
@@ -219,7 +228,7 @@ class VirtualizedTable extends React.Component {
 
     this.state = {
       filters: {},
-      filteredRecords: props.records,
+      filteredRecords: this.getFilteredRecordsFromFilters(props.records, props.filters),
       showCount: 20,
     }
   }
@@ -248,8 +257,7 @@ class VirtualizedTable extends React.Component {
   getFilteredRecordsFromFilters = (records, filters) => {
     const sorts = {};
     const r = records.filter((r) => {
-      return Object.entries(filters).every(([cName, { term, type, sort }]) => {
-        // add sorts for later
+      return Object.entries(filters).every(([cName, { term='', type, sort }]) => {
         if (sort) {
           sorts[cName] = sort;
         }
@@ -262,12 +270,10 @@ class VirtualizedTable extends React.Component {
         }
 
         switch (type) {
-          case 'includes':
-            return (text || '').toLowerCase().includes(term.toLowerCase());
           case 'exact':
             return (text || '').toLowerCase() === term.toLowerCase();
           default:
-            return false;
+            return (text || '').toLowerCase().includes(term.toLowerCase());
         }
       });
     });
@@ -278,8 +284,8 @@ class VirtualizedTable extends React.Component {
         for (let i = 0; i < sortArray.length; i++) {
           const [column, sortDir] = sortArray[i];
 
-          const aText = typeof a[column] === 'string' ? a[column] : a[column].map(n => Node.string(n))[0];
-          const bText = typeof b[column] === 'string' ? b[column] : b[column].map(n => Node.string(n))[0];
+          const aText = typeof a[column] === 'string' ? a[column] : (a[column] || []).map(n => Node.string(n))[0] || '';
+          const bText = typeof b[column] === 'string' ? b[column] : (b[column] || []).map(n => Node.string(n))[0] || '';
           const diff = sortDir === 'asc' ? aText.localeCompare(bText) : bText.localeCompare(aText);
 
           if (diff !== 0) {
@@ -294,32 +300,10 @@ class VirtualizedTable extends React.Component {
     return r;
   }
 
-  onSetFilters = (columnName, { term='', type, ...rest }) => {
-    const { records } = this.props;
-    const { filters } = this.state;
-    const newFilters = {
-      ...filters,
-      [columnName]: {
-        ...rest,
-        term,
-        type: type || 'includes',
-      },
-    };
-
-    const filteredRecords = this.getFilteredRecordsFromFilters(records, newFilters);
-
-    this.setState({
-      filters: newFilters,
-      filteredRecords,
-      showCount: 20,
-    })
-  }
-
   componentDidUpdate(prevProps) {
-    const { records } = this.props;
-    const { filters } = this.state;
+    const { records, filters } = this.props;
 
-    if (records !== prevProps.records) {
+    if (records !== prevProps.records || filters !== prevProps.filters) {
       this.setState({
         filteredRecords: this.getFilteredRecordsFromFilters(records, filters),
       })
@@ -374,7 +358,6 @@ class VirtualizedTable extends React.Component {
                 axis="x"
                 lockAxis="x"
                 onSortEnd={this.onColumnReorder}
-                onChangeFilters={this.onSetFilters}
                 useDragHandle
               />
             </thead>
@@ -400,7 +383,8 @@ class VirtualizedTable extends React.Component {
 
 const mapStateToProps = (state, props) => ({
   table: getTableById(props.id)(state),
-  records: getRecordsByTableId(props.id)(state)
+  records: getRecordsByTableId(props.id)(state),
+  filters: getFiltersByTableId(props.id)(state),
 });
 
 const mapDispatchToProps = {
