@@ -8,10 +8,56 @@ import fuzzysort from 'fuzzysort';
 import { getRecords, getTables, tablesSetActiveRecord } from 'reducers/tables';
 import { getPages, pagesSetActivePage, getActivePageId, getPagePathUtil } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
+import { get } from 'lodash';
 
 import './Editor.scss';
 
+const electron = window.require('electron');
+
 const DICE_REGEX = /^(^|\s|\()+(?<dice>(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?)(\))?$/;
+const IMG_URL_REGEX = /\.(jpeg|jpg|gif|png)(\?|$)/;
+const URL_REGEX = new RegExp(
+  "^" +
+    // protocol identifier (optional)
+    // short syntax // still required
+    "(?:(?:(?:https?|ftp):)?\\/\\/)" +
+    // user:pass BasicAuth (optional)
+    "(?:\\S+(?::\\S*)?@)?" +
+    "(?:" +
+      // IP address exclusion
+      // private & local networks
+      "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
+      "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
+      "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
+      // IP address dotted notation octets
+      // excludes loopback network 0.0.0.0
+      // excludes reserved space >= 224.0.0.0
+      // excludes network & broadcast addresses
+      // (first & last IP address of each class)
+      "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
+      "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
+      "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
+    "|" +
+      // host & domain names, may end with dot
+      // can be replaced by a shortest alternative
+      // (?![-_])(?:[-\\w\\u00a1-\\uffff]{0,63}[^-_]\\.)+
+      "(?:" +
+        "(?:" +
+          "[a-z0-9\\u00a1-\\uffff]" +
+          "[a-z0-9\\u00a1-\\uffff_-]{0,62}" +
+        ")?" +
+        "[a-z0-9\\u00a1-\\uffff]\\." +
+      ")+" +
+      // TLD identifier name, may end with dot
+      "(?:[a-z\\u00a1-\\uffff]{2,}\\.?)" +
+    ")" +
+    // port number (optional)
+    "(?::\\d{2,5})?" +
+    // resource path (optional)
+    "(?:[/?#]\\S*)?" +
+  "$", "i"
+);
+
 
 const INLINE_MATCHES = [
   // Record
@@ -53,13 +99,19 @@ const withInline = editor => {
   const { isInline, isVoid } = editor
   const inlines = INLINE_MATCHES.map(c => c.element);
   inlines.push('roller');
+  inlines.push('link');
+  inlines.push('image')
+
+  const voids = INLINE_MATCHES.map(c => c.element);
+  voids.push('image');
+  voids.push('roller');
 
   editor.isInline = element => {
     return inlines.includes(element.type) ? true : isInline(element)
   }
 
   editor.isVoid = element => {
-    return inlines.includes(element.type) ? true : isVoid(element)
+    return voids.includes(element.type) ? true : isVoid(element)
   }
 
   return editor
@@ -185,6 +237,19 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
       return (
         <span className="dice" {...attributes} onClick={() => rollDice(element.dice)}>
           {element.dice}
+          {children}
+        </span>
+      )
+    case 'link':
+      return (
+        <a {...attributes} onClick={() => electron.shell.openExternal(element.children[0].text)}>
+          {children}
+        </a>
+      )
+    case 'image':
+      return (
+        <span>
+          <img {...attributes} src={element.src} alt="" onClick={() => electron.shell.openExternal(element.src)}/>
           {children}
         </span>
       )
@@ -322,19 +387,51 @@ class CustomEditor extends Component {
 
     if (event.key === ' ' && editor.selection) {
       const [currentCursor] = Range.edges(editor.selection);
-      const wordStart = Editor.before(editor, currentCursor, { unit: 'word' });
-      const prevWordRange = wordStart && Editor.range(editor, wordStart, currentCursor);
-      const prevWord = prevWordRange && Editor.string(editor, prevWordRange);
+      const lineStart = Editor.before(editor, currentCursor, { unit: 'line' });
+      const prevLineRange = lineStart && Editor.range(editor, lineStart, currentCursor);
+      const prevLine = prevLineRange && Editor.string(editor, prevLineRange);
+      const [prevWord] = (prevLine || '').split(' ').slice(-1) || '';
+      Transforms.select(editor, prevLineRange);
+      Transforms.move(editor, {
+        distance: prevLine.length - prevWord.length,
+        unit: 'character',
+        edge: 'anchor',
+      });
+
+      if (prevWord.match(URL_REGEX)) {
+        // Check if prev word is a parseable url
+        const isImgUrl = prevWord.match(IMG_URL_REGEX);
+
+        let el;
+        if (isImgUrl) {
+          el = {
+            type: 'image',
+            src: prevWord,
+            children: [{ text: '' }],
+          }
+        } else {
+          el = {
+            type: 'link',
+            children: [{ text: prevWord }]
+          }
+        }
+
+        Transforms.insertNodes(editor, el);
+      }
 
       const match = (prevWord || '').match(DICE_REGEX)
 
       if (match) {
-        Transforms.select(editor, prevWordRange);
         const roller = {
           type: 'roller',
           dice: match[2],
           children: [{ text: '' }]
         }
+
+        if (prevWord.startsWith('(')) {
+          Transforms.insertText(editor, '(');
+        }
+
         Transforms.insertNodes(editor, roller);
         Transforms.move(editor, { distance: 1 });
 
@@ -345,21 +442,17 @@ class CustomEditor extends Component {
 
       if (prevWord === '1.') {
         event.preventDefault()
-        Transforms.select(editor, prevWordRange);
         Transforms.insertText(editor, '');
         CustomEditorEvents.toggleBlock(editor, 'ordered-list');
       }
 
       if (prevWord === '*' || prevWord === '-') {
         event.preventDefault()
-        Transforms.select(editor, prevWordRange);
         Transforms.insertText(editor, '');
         CustomEditorEvents.toggleBlock(editor, 'list');
       }
-    }
 
-    if (event.shiftKey && event.key === '8') {
-      event.key = '*';
+      Transforms.collapse(editor, { edge: 'end' });
     }
 
     if (!event.metaKey) {
