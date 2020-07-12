@@ -67,6 +67,18 @@
     }
   }
 
+  .formula {
+    text-decoration: underline;
+
+    &:hover {
+      cursor: pointer;
+    }
+
+    .input {
+      width: auto;
+    }
+  }
+
   .callout {
     background-color: #ececec;
     padding: 10px;

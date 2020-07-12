@@ -1,5 +1,6 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
 import ReactDOM from 'react-dom';
+import { v4 as uuidV4 } from 'uuid';
 import { createEditor, Transforms, Editor, Text, Range, Node } from 'slate'
 import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import classNames from 'classnames';
@@ -8,7 +9,7 @@ import fuzzysort from 'fuzzysort';
 import { getRecords, getTables, tablesSetActiveRecord } from 'reducers/tables';
 import { getPages, pagesSetActivePage, getActivePageId, getPagePathUtil } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
-import { get } from 'lodash';
+import Input from 'components/Input';
 
 import './Editor.scss';
 
@@ -101,10 +102,12 @@ const withInline = editor => {
   inlines.push('roller');
   inlines.push('link');
   inlines.push('image')
+  inlines.push('formula');
 
   const voids = INLINE_MATCHES.map(c => c.element);
   voids.push('image');
   voids.push('roller');
+  voids.push('formula');
 
   editor.isInline = element => {
     return inlines.includes(element.type) ? true : isInline(element)
@@ -194,6 +197,43 @@ const Leaf = props => {
   )
 }
 
+const Formula = ({ attributes, formula, formulaId, children, onChange }) => {
+  const [currentFormula, setCurrentFormula] = useState(formula);
+  const [isEditing, setIsEditing] = useState(false);
+
+  if (isEditing) {
+    return (
+      <span {...attributes} className="formula">
+        <Input
+          value={currentFormula}
+          onChange={(e) => setCurrentFormula(e.target.value)}
+          autoFocus
+          onBlur={() => {
+            setIsEditing(false);
+            onChange(currentFormula.length ? currentFormula : '"Set a formula..."', formulaId);
+          }} />
+        {children}
+      </span>
+    );
+  }
+
+  let val;
+  try {
+    //Eval is a required function here to allow users to create their own formulas
+    // eslint-disable-next-line
+    val = eval(currentFormula)
+  } catch (e) {
+    val = `Invalid formula: ${formula}`;
+  }
+
+  return (
+    <span {...attributes} className="formula" onClick={() => setIsEditing(true)}>
+      {val}
+      {children}
+    </span>
+  )
+}
+
 const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rollAction, setActiveRecord: tablesSetActiveRecord })(({
   attributes,
   children,
@@ -201,6 +241,7 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
   setPage,
   rollDice,
   setActiveRecord,
+  onChangeFormula,
 }) => {
   switch (element.type) {
     case 'h1':
@@ -253,6 +294,16 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
           {children}
         </span>
       )
+    case 'formula':
+      return (
+        <Formula
+          attributes={attributes}
+          onChange={onChangeFormula}
+          formulaId={element.formulaId}
+          formula={element.formula}>
+          {children}
+        </Formula>
+      )
     default:
       return <p {...attributes}>{children}</p>
   }
@@ -279,11 +330,17 @@ class CustomEditor extends Component {
   }
 
   renderElement = (props) => {
-    return <Element {...props} />
+    return <Element {...props} onChangeFormula={this.onChangeFormula} />
   }
 
   renderLeaf = (props) => {
     return <Leaf {...props} />
+  }
+
+  onChangeFormula = (formula, formulaId) => {
+    const { editor } = this.state;
+    const node = [...Node.elements(editor)].find(([el]) => el.formulaId === formulaId);
+    Transforms.setNodes(editor, { formula }, { at: node[1]});
   }
 
   onChange = (newValue) => {
@@ -438,6 +495,18 @@ class CustomEditor extends Component {
         if (prevWord.endsWith(')')) {
           Transforms.insertText(editor, ')');
         }
+      }
+
+      if (prevWord === '$()') {
+        event.preventDefault();
+        const formula = {
+          type: 'formula',
+          formula: '"Set a formula..."',
+          formulaId: uuidV4(),
+          children: [{ text: '' }]
+        }
+        Transforms.insertNodes(editor, formula);
+        Transforms.move(editor, { distance: 1 });
       }
 
       if (prevWord === '1.') {
