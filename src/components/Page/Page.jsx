@@ -40,6 +40,7 @@ const Page = ({ pageId }) => {
       ...newContent[index],
       content
     };
+
     dispatch(pagesEditPage(pageId, {
       ...page,
       content: newContent,
@@ -60,9 +61,10 @@ const Page = ({ pageId }) => {
     }, 0);
   }
 
-  const handleNext = (index) => (e) => {
+  const handleNext = (index) => () => {
     const newContent = [...page.content];
     newContent.splice(index + 1, 0, { id: uuidV4(), content: null });
+
     dispatch(pagesEditPage(pageId, {
       ...page,
       content: newContent,
@@ -173,14 +175,14 @@ const Page = ({ pageId }) => {
       <div className="page-header">{page.name}</div>
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable className="page-content" droppableId="content">
-          {(provided, snapshot) => (
+          {(provided) => (
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
             >
               {(page.content || []).map((c, i) => (
                 <Draggable key={c.id} draggableId={c.id} index={i}>
-                  {(provided, snapshot) => (
+                  {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
