@@ -35,11 +35,11 @@
     }
 
     .page-item {
-      transition-delay: 1000;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 20px;
+      padding: 10px;
+      margin-top: 5px;
       width: fit-content;
       min-width: -webkit-fill-available;
 
@@ -66,7 +66,12 @@
       }
 
       .dropdown-caret {
-        width: 20px;
+        width: 25px;
+
+        &.hidden {
+          opacity: 0;
+          pointer-events: none;
+        }
       }
 
       .menu {
@@ -75,8 +80,6 @@
 
       .page-name {
         width: 100%;
-        margin-left: 10px;
-        margin-right: 10px;
       }
     }
 

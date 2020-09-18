@@ -146,11 +146,15 @@ const Sidebar = () => {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             className={classNames('page-item', { active: key === activeId, hidden: !visible })}
-                            style={{ ...provided.draggableProps.style, paddingLeft: `${level * 20}px`}}
+                            style={{ ...provided.draggableProps.style, paddingLeft: `${level * 10}px`}}
                             key={key}
                             onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
                           >
-                            <Icon className="dropdown-caret" icon={collapsed ? 'caret-right' : 'caret-down'} onClick={onToggleDropdown(key)} />
+                            <Icon
+                              className={classNames("dropdown-caret", { hidden: level >= get(levels, [index + 1, 'level'], 0) })}
+                              icon={collapsed ? 'caret-right' : 'caret-down'}
+                              onClick={onToggleDropdown(key)} />
+
                             <EditableText
                               className="page-name"
                               text={name}
