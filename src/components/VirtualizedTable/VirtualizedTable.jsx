@@ -211,10 +211,10 @@ const DataRow = SortableElement(({ table, record, recordIndex, id }) => (
   </tr>
 ));
 
-const DataGrid = SortableContainer(({ filteredRecords, showCount, table, id }) => (
+const DataGrid = SortableContainer(({ filteredRecords, limit, offset, table, id }) => (
   <tbody>
     {
-      filteredRecords.slice(0, showCount).map((r, recordIndex) => (
+      filteredRecords.slice(offset, limit + offset).map((r, recordIndex) => (
         <DataRow key={r.__id} index={recordIndex} table={table} record={r} id={id} recordIndex={recordIndex} />
       ))
     }
@@ -228,7 +228,8 @@ class VirtualizedTable extends React.Component {
     this.state = {
       filters: {},
       filteredRecords: this.getFilteredRecordsFromFilters(props.records, props.filters),
-      showCount: 20,
+      limit: 20,
+      offset: 0,
     }
   }
 
@@ -330,20 +331,27 @@ class VirtualizedTable extends React.Component {
   }
 
   handleScroll = (e) => {
-    const { filteredRecords, showCount } = this.state;
+    const { filteredRecords, limit, offset } = this.state;
     const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
+    const top = e.target.scrollTop === 0;
 
 
-    if (bottom && showCount <= filteredRecords.length) {
+    if (bottom && limit <= filteredRecords.length) {
       this.setState({
-        showCount: showCount + 20,
-      })
+        offset: offset + limit,
+      });
+      e.target.scrollTop = 1;
+    } else if (top && offset > 0) {
+      this.setState({
+        offset: offset - limit,
+      });
+      e.target.scrollTop = e.target.scrollHeight + e.target.clientHeight;
     }
   }
 
   render() {
     const { table, id } = this.props;
-    const { filteredRecords, outerHeight, showCount, filters } = this.state;
+    const { filteredRecords, outerHeight, limit, offset, filters } = this.state;
 
     if (!table) {
       return <div>The selected table does not exist</div>
@@ -381,7 +389,8 @@ class VirtualizedTable extends React.Component {
               })}
               filteredRecords={filteredRecords}
               table={table}
-              showCount={showCount} />
+              limit={limit}
+              offset={offset} />
           </table>
         </div>
       </div>
