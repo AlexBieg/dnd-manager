@@ -80,22 +80,48 @@
   }
 
   .callout {
-    background-color: #ececec;
     padding: 10px;
-    padding-left: 30px;
+    // padding-left: 30px;
     margin-left: 20px;
 
-    &:first-child::before {
-      font-weight: 900;
-      font-family: "Font Awesome 5 Free";
-      margin-right: 10px;
-      content: "\f0eb"; // Lightbulb
-      color: #fffab9;
+    .lightbulb-popover {
+      display: inline;
     }
 
-    &:first-child {
-      padding-left: 10px;
-      display: flex;
+    .lightbulb {
+      margin-right: 10px;
+      color: #fffab9;
+
+      &:hover {
+        cursor: pointer;
+      }
+    }
+
+    &.gray {
+      background-color: #ececec;
+    }
+
+    &.blue {
+      background-color: #d6d6ff;
+    }
+
+    &.red {
+      background-color: #ffd6d6;
+    }
+
+    &.orange {
+      background-color: #ffd890;
+    }
+
+    &.yellow {
+      background-color: #fffab9;;
+      .lightbulb {
+        color: #e4e4e4;
+      }
+    }
+
+    &.green {
+      background-color: #d4ffd4;
     }
   }
 

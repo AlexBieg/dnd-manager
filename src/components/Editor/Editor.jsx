@@ -10,6 +10,8 @@ import { getRecords, getTables, tablesSetActiveRecord } from 'reducers/tables';
 import { getPages, pagesSetActivePage, getActivePageId, getPagePathUtil } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
 import Input from 'components/Input';
+import Icon from 'components/Icon';
+import Popover from 'components/Popover';
 
 import './Editor.scss';
 
@@ -151,7 +153,7 @@ const CustomEditorEvents = {
     return !!match
   },
 
-  toggleBlock(editor, blockType) {
+  toggleBlock(editor, blockType, options={}) {
     const isActive = CustomEditorEvents.isBlockActive(editor, blockType);
     const isList = LIST_TYPES.includes(blockType);
 
@@ -172,11 +174,41 @@ const CustomEditorEvents = {
     } else {
       Transforms.setNodes(
         editor,
-        { type: isActive ? null : blockType },
+        {
+          type: isActive ? null : blockType,
+          ...options,
+        },
         { match: n => Editor.isBlock(editor, n) }
       )
     }
   },
+
+  setBlock(editor, blockType, options={}) {
+    const isList = LIST_TYPES.includes(blockType);
+
+    if (isList) {
+      Transforms.unwrapNodes(editor, {
+        match: n => LIST_TYPES.includes(n.type),
+        split: true,
+      });
+
+      Transforms.setNodes(editor, {
+        type: 'list-item',
+      });
+
+      const block = { type: blockType, children: [] }
+      Transforms.wrapNodes(editor, block)
+    } else {
+      Transforms.setNodes(
+        editor,
+        {
+          type: blockType,
+          ...options,
+        },
+        { match: n => Editor.isBlock(editor, n) }
+      )
+    }
+  }
 }
 
 export const Portal = ({ children }) => {
@@ -234,6 +266,29 @@ const Formula = ({ attributes, formula, formulaId, children, onChange }) => {
   )
 }
 
+const Callout = ({ color, attributes, children, onChangeColor }) => (
+  <div className={classNames('callout', color || 'gray')} {...attributes}>
+    <Popover
+      className="lightbulb-popover"
+      options={[
+        { text: 'Gray', onClick: () => onChangeColor('gray')},
+        { text: 'Blue', onClick: () => onChangeColor('blue') },
+        { text: 'Red', onClick: () => onChangeColor('red') },
+        { text: 'Orange', onClick: () => onChangeColor('orange') },
+        { text: 'Green', onClick: () => onChangeColor('green') },
+        { text: 'Yellow', onClick: () => onChangeColor('yellow') },
+      ]}
+      style={{ userSelect: "none" }}
+      contentEditable={false}
+    >
+      <Icon
+        icon="lightbulb"
+        className="lightbulb" />
+    </Popover>
+    {children}
+  </div>
+);
+
 const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rollAction, setActiveRecord: tablesSetActiveRecord })(({
   attributes,
   children,
@@ -242,6 +297,7 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
   rollDice,
   setActiveRecord,
   onChangeFormula,
+  onChangeCalloutColor,
 }) => {
   switch (element.type) {
     case 'h1':
@@ -257,7 +313,11 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
     case 'list':
       return <ul {...attributes}>{children}</ul>
     case 'callout':
-      return <div className="callout" {...attributes}>{children}</div>
+      return (
+        <Callout color={element.color} attributes={attributes} onChangeColor={onChangeCalloutColor}>
+          {children}
+        </Callout>
+      );
     case 'quote':
       return <div className="quote" {...attributes}>{children}</div>
     case 'record':
@@ -330,11 +390,26 @@ class CustomEditor extends Component {
   }
 
   renderElement = (props) => {
-    return <Element {...props} onChangeFormula={this.onChangeFormula} />
+    return (
+      <Element
+        {...props}
+        setonChangeFormula={this.onChangeFormula}
+        onChangeCalloutColor={this.onChangeCalloutColor}
+      />
+    );
   }
 
   renderLeaf = (props) => {
     return <Leaf {...props} />
+  }
+
+  onChangeCalloutColor = (color) => {
+    const { editor } = this.state;
+    Transforms.select(editor, {
+      path: [0, 0],
+      offset: 0,
+    });
+    CustomEditorEvents.setBlock(editor, 'callout', { color });
   }
 
   onChangeFormula = (formula, formulaId) => {
@@ -549,7 +624,7 @@ class CustomEditor extends Component {
 
       case 'p': {
         event.preventDefault()
-        CustomEditorEvents.toggleBlock(editor, 'callout');
+        CustomEditorEvents.toggleBlock(editor, 'callout', { color: 'gray' });
         break
       }
 
