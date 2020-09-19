@@ -91,9 +91,16 @@
     .lightbulb {
       margin-right: 10px;
       color: #fffab9;
+      opacity: 0;
 
       &:hover {
         cursor: pointer;
+      }
+    }
+
+    &:first-child {
+      .lightbulb {
+        opacity: 1;
       }
     }
 

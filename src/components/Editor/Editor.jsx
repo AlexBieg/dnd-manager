@@ -405,11 +405,9 @@ class CustomEditor extends Component {
 
   onChangeCalloutColor = (color) => {
     const { editor } = this.state;
-    Transforms.select(editor, {
-      path: [0, 0],
-      offset: 0,
-    });
-    CustomEditorEvents.setBlock(editor, 'callout', { color });
+    Transforms.select(editor, []);
+    CustomEditorEvents.setBlock(  editor, 'callout', { color });
+    Transforms.collapse(editor, { edge: 'end' });
   }
 
   onChangeFormula = (formula, formulaId) => {
@@ -513,6 +511,7 @@ class CustomEditor extends Component {
       }
 
       if (Node.string(editor).length === 0 && editor.children.length === 1) {
+        event.preventDefault();
         onDelete();
       }
     }
@@ -667,6 +666,8 @@ class CustomEditor extends Component {
 
     if (focus && !ReactEditor.isFocused(editor)) {
       ReactEditor.focus(editor);
+      Transforms.select(editor, []);
+      Transforms.collapse(editor, { edge: 'end' });
     }
   }
 
