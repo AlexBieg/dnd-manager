@@ -1,8 +1,9 @@
 import React, { Component, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { v4 as uuidV4 } from 'uuid';
-import { createEditor, Transforms, Editor, Text, Range, Node } from 'slate'
-import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
+import { createEditor, Transforms, Editor, Text, Range, Node } from 'slate';
+import { Slate, Editable, withReact, ReactEditor } from 'slate-react';
+import { withHistory } from 'slate-history';
 import classNames from 'classnames';
 import { connect } from 'react-redux';
 import fuzzysort from 'fuzzysort';
@@ -380,7 +381,7 @@ class CustomEditor extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      editor: withInline(withReact(createEditor())),
+      editor: withHistory(withInline(withReact(createEditor()))),
       pageMatches: [],
       recordMatches: [],
       targetRange: null,
@@ -643,6 +644,16 @@ class CustomEditor extends Component {
         event.preventDefault();
         CustomEditorEvents.toggleFormatMark(editor, 'italic');
         break
+      }
+
+      case 'z': {
+        editor.undo();
+        break;
+      }
+
+      case 'u': {
+        editor.redo();
+        break;
       }
 
       default:
