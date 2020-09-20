@@ -230,7 +230,7 @@ const Leaf = props => {
   )
 }
 
-const Formula = ({ attributes, formula, formulaId, children, onChange }) => {
+const Formula = ({ attributes, formula, formulaId, children, onChange = () => {} }) => {
   const [currentFormula, setCurrentFormula] = useState(formula);
   const [isEditing, setIsEditing] = useState(false);
 

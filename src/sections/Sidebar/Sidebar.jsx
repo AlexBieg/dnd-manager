@@ -134,7 +134,6 @@ const Sidebar = () => {
     <div className="sidebar" style={{ width: currentWidth }}>
       <div className="sidebar-content">
         <div className="header">D&D Manager</div>
-        <div className="pages-header">Your Pages</div>
         <DragDropContext onDragEnd={handleReorderPages}>
           <Droppable className="page-content" droppableId="content" isCombineEnabled>
             {(provided) => (
@@ -152,7 +151,7 @@ const Sidebar = () => {
                             ref={provided.innerRef}
                             {...provided.draggableProps}
                             className={classNames('page-item', { active: key === activeId, hidden: !visible })}
-                            style={{ ...provided.draggableProps.style, paddingLeft: `${level * 10}px`}}
+                            style={{ ...provided.draggableProps.style, paddingLeft: `${level * 10 - 10}px`}}
                             key={key}
                             onClick={() => dispatch(pagesSetActivePage(key))}
                           >
