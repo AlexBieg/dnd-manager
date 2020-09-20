@@ -1,16 +1,6 @@
 .roller-bar {
   display: flex;
 
-  .roller-bar-drag-handle {
-    width: 4px;
-    height: 100%;
-    background: #cecece;
-
-    &:hover {
-      cursor: ew-resize;
-    }
-  }
-
   .roller-bar-content {
     flex: 1;
     background-color: #ececec;

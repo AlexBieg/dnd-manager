@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
 import Popover from 'react-tiny-popover'
@@ -20,6 +20,7 @@ import Button from 'components/Button';
 import Icon from 'components/Icon';
 import PopoverMenu from 'components/PopoverMenu';
 import EditableText from 'components/EditableText';
+import DragBar from 'components/DragBar';
 import Importer from 'sections/Importer';
 import './Sidebar.scss';
 
@@ -48,6 +49,7 @@ const Sidebar = () => {
   const activeId = useSelector(getActivePageId)
   const [openMenus, setOpenMenus] = useState(new Set());
   const [editingNames, setEditingNames] = useState(new Set());
+  const [currentWidth, setCurrentWidth] = useState(width);
 
 
   const onAdd = (id) => (event) => {
@@ -85,6 +87,8 @@ const Sidebar = () => {
     e.stopPropagation();
     dispatch(pagesEditPage(id, { ...pages[id], collapsed: !pages[id].collapsed }));
   }
+
+  const onResize = (w) => dispatch(settingsSetSidebarWidth(w));
 
   const handleReorderPages = useCallback(({ combine, source, destination, draggableId }) => {
     const startIndex = source.index;
@@ -124,8 +128,10 @@ const Sidebar = () => {
     }
   });
 
+  const isDragging = width !== currentWidth;
+
   return (
-    <div className="sidebar" style={{ width }}>
+    <div className="sidebar" style={{ width: currentWidth }}>
       <div className="sidebar-content">
         <div className="header">D&D Manager</div>
         <div className="pages-header">Your Pages</div>
@@ -138,7 +144,7 @@ const Sidebar = () => {
                 className="pages-list"
               >
                 {
-                  levels.map(({ key, collapsed, name, level, visible }, index) => {
+                  (isDragging ? [] : levels).map(({ key, collapsed, name, level, visible }, index) => {
                     return(
                       <Draggable key={key} draggableId={key} index={index}>
                         {(provided) => (
@@ -148,7 +154,7 @@ const Sidebar = () => {
                             className={classNames('page-item', { active: key === activeId, hidden: !visible })}
                             style={{ ...provided.draggableProps.style, paddingLeft: `${level * 10}px`}}
                             key={key}
-                            onClick={((id) => () => dispatch(pagesSetActivePage(id)))(key)}
+                            onClick={() => dispatch(pagesSetActivePage(key))}
                           >
                             <Icon
                               className={classNames("dropdown-caret", { hidden: level >= get(levels, [index + 1, 'level'], 0) })}
@@ -185,7 +191,10 @@ const Sidebar = () => {
         <Button className="add-page" value="Add New Page" onClick={onAdd()} />
         <Importer />
       </div>
-      <div className="sidebar-drag-handle" draggable onDragEnd={e => dispatch(settingsSetSidebarWidth(e.clientX))} />
+      <DragBar
+        onDragEnd={((w) => () => onResize(w))(currentWidth)}
+        onDrag={(x) => setCurrentWidth(x)}
+      />
     </div>
   );
 };

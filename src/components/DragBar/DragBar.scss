@@ -1,0 +1,9 @@
+.drag-bar {
+  width: 4px;
+  height: 100%;
+  background: #cecece;
+
+  &:hover {
+    cursor: ew-resize;
+  }
+}
