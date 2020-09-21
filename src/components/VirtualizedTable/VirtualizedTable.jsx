@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, createRef } from 'react';
 import { connect, useDispatch, useSelector } from 'react-redux';
 import { arrayMove, SortableHandle } from 'react-sortable-hoc';
 import { debounce } from 'lodash';
@@ -194,7 +194,7 @@ const DataCell = ({
 }
 
 const DataRow = SortableElement(({ table, record, recordIndex, id }) => (
-  <tr>
+  <tr className="loaded-row">
     {
       table.columns.map((c, columnIndex) => (
         <DataCell
@@ -211,11 +211,13 @@ const DataRow = SortableElement(({ table, record, recordIndex, id }) => (
   </tr>
 ));
 
-const DataGrid = SortableContainer(({ filteredRecords, limit, offset, table, id }) => (
+const DataGrid = SortableContainer(({ filteredRecords, limit, offset, table, id, rowHeights }) => (
   <tbody>
     {
-      filteredRecords.slice(offset, limit + offset).map((r, recordIndex) => (
-        <DataRow key={r.__id} index={recordIndex} table={table} record={r} id={id} recordIndex={recordIndex} />
+      filteredRecords.map((r, recordIndex) => (
+        recordIndex >= offset && recordIndex <= (offset + limit) ?
+          <DataRow key={r.__id} index={recordIndex} table={table} record={r} id={id} recordIndex={recordIndex} /> :
+          <tr key={r.__id} className="loading-row" style={{ height: rowHeights[recordIndex]}}><td>Loading...</td></tr>
       ))
     }
 </tbody>
@@ -225,12 +227,20 @@ class VirtualizedTable extends React.Component {
   constructor(props) {
     super(props);
 
+    const filteredRecords = this.getFilteredRecordsFromFilters(props.records, props.filters)
+
     this.state = {
       filters: {},
-      filteredRecords: this.getFilteredRecordsFromFilters(props.records, props.filters),
-      limit: 20,
+      filteredRecords: filteredRecords,
+      limit: 30,
       offset: 0,
+      tableRef: createRef(),
+      rowHeights: (new Array(filteredRecords.length)).fill(44),
+      scrollTop: 0,
+      aboveHeights: 0,
     }
+
+    this.lastScrollTop = 0;
   }
 
   onColumnReorder = ({ oldIndex, newIndex}) => {
@@ -313,8 +323,13 @@ class VirtualizedTable extends React.Component {
     const { records, filters } = this.props;
 
     if (records !== prevProps.records || filters !== prevProps.filters) {
+      const newRecords = this.getFilteredRecordsFromFilters(records, filters);
+
       this.setState({
-        filteredRecords: this.getFilteredRecordsFromFilters(records, filters),
+        filteredRecords: newRecords,
+        rowHeights: (new Array(newRecords.length)).fill(44),
+        offset: 0,
+        aboveHeights: 0,
       })
     }
   }
@@ -330,28 +345,52 @@ class VirtualizedTable extends React.Component {
     editName(id, newName);
   }
 
-  handleScroll = (e) => {
-    const { filteredRecords, limit, offset } = this.state;
-    const bottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
-    const top = e.target.scrollTop === 0;
+  handleScroll = (useScrollDirection=true) => {
+    const { filteredRecords, limit, offset, tableRef, rowHeights, aboveHeights } = this.state;
 
+    const loadedRowHeights = [...tableRef.current.querySelectorAll('tr.loaded-row')].map((row) => row.scrollHeight);
 
-    if (bottom && limit <= filteredRecords.length) {
-      this.setState({
-        offset: offset + limit,
-      });
-      e.target.scrollTop = 1;
-    } else if (top && offset > 0) {
-      this.setState({
-        offset: offset - limit,
-      });
-      e.target.scrollTop = e.target.scrollHeight + e.target.clientHeight;
+    let loadedHeight = 0;
+
+    for (let i = offset; i < offset + limit && i < rowHeights.length; i++) {
+      const h = loadedRowHeights[i - offset];
+
+      loadedHeight += h;
+      rowHeights[i] = h;
     }
+
+    const scrollBottom = tableRef.current.clientHeight + tableRef.current.scrollTop;
+
+    const isScrollingDown = useScrollDirection ? this.lastScrollTop < tableRef.current.scrollTop : true;
+    const isScrollingUp = useScrollDirection ? this.lastScrollTop > tableRef.current.scrollTop : true;
+    const hasMoreThanLimit = filteredRecords.length > limit;
+
+    if (tableRef.current.scrollTop >= (aboveHeights + (loadedHeight / 3)) && isScrollingDown && hasMoreThanLimit) {
+      const newOffset = offset + (limit / 3);
+      const newAboveHeights = rowHeights.reduce((acc, h, i) => i < newOffset ? acc + h : acc, 0);
+
+      this.setState({
+        offset: newOffset,
+        rowHeights: rowHeights,
+        aboveHeights: newAboveHeights
+      });
+    } else if (offset > 0 && scrollBottom < (aboveHeights + loadedHeight - (loadedHeight / 3)) && isScrollingUp && hasMoreThanLimit) {
+      const newOffset = offset - (limit / 3);
+      const newAboveHeights = rowHeights.reduce((acc, h, i) => i < newOffset ? acc + h : acc, 0);
+
+      this.setState({
+        offset: newOffset,
+        rowHeights: rowHeights,
+        aboveHeights: newAboveHeights,
+      });
+    }
+
+    this.lastScrollTop = tableRef.current.scrollTop;
   }
 
   render() {
     const { table, id } = this.props;
-    const { filteredRecords, outerHeight, limit, offset, filters } = this.state;
+    const { filteredRecords, outerHeight, limit, offset, filters, tableRef, rowHeights } = this.state;
 
     if (!table) {
       return <div>The selected table does not exist</div>
@@ -364,7 +403,7 @@ class VirtualizedTable extends React.Component {
           <Icon icon="plus" onClick={this.onAddRow(0)} />
           <Icon icon="columns" onClick={this.onAddColumn} />
         </div>
-        <div className="v-table-grid" onScroll={this.handleScroll}>
+        <div className="v-table-grid" onScroll={this.handleScroll} ref={tableRef}>
           <table cellSpacing="0" cellPadding="0">
             <thead>
               <HeaderRow
@@ -388,6 +427,7 @@ class VirtualizedTable extends React.Component {
                 width: node.offsetWidth,
               })}
               filteredRecords={filteredRecords}
+              rowHeights={rowHeights}
               table={table}
               limit={limit}
               offset={offset} />
