@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import { v4 as uuidV4 } from 'uuid';
 import { createEditor, Transforms, Editor, Text, Range, Node } from 'slate';
@@ -10,94 +10,13 @@ import fuzzysort from 'fuzzysort';
 import { getRecords, getTables, tablesSetActiveRecord } from 'reducers/tables';
 import { getPages, pagesSetActivePage, getActivePageId, getPagePathUtil } from 'reducers/pages';
 import { rollAction } from 'reducers/rolls';
-import Input from 'components/Input';
-import Icon from 'components/Icon';
-import Popover from 'components/Popover';
+import Formula from './Formula';
+import Callout from './Callout';
+import { INLINE_MATCHES, LIST_TYPES, URL_REGEX, IMG_URL_REGEX, DICE_REGEX } from './editor-utils';
 
 import './Editor.scss';
 
 const electron = window.require('electron');
-
-const DICE_REGEX = /^(^|\s|\()+(?<dice>(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?)(\))?$/;
-const IMG_URL_REGEX = /\.(jpeg|jpg|gif|png)(\?|$)/;
-const URL_REGEX = new RegExp(
-  "^" +
-    // protocol identifier (optional)
-    // short syntax // still required
-    "(?:(?:(?:https?|ftp):)?\\/\\/)" +
-    // user:pass BasicAuth (optional)
-    "(?:\\S+(?::\\S*)?@)?" +
-    "(?:" +
-      // IP address exclusion
-      // private & local networks
-      "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
-      "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
-      "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
-      // IP address dotted notation octets
-      // excludes loopback network 0.0.0.0
-      // excludes reserved space >= 224.0.0.0
-      // excludes network & broadcast addresses
-      // (first & last IP address of each class)
-      "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
-      "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
-      "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
-    "|" +
-      // host & domain names, may end with dot
-      // can be replaced by a shortest alternative
-      // (?![-_])(?:[-\\w\\u00a1-\\uffff]{0,63}[^-_]\\.)+
-      "(?:" +
-        "(?:" +
-          "[a-z0-9\\u00a1-\\uffff]" +
-          "[a-z0-9\\u00a1-\\uffff_-]{0,62}" +
-        ")?" +
-        "[a-z0-9\\u00a1-\\uffff]\\." +
-      ")+" +
-      // TLD identifier name, may end with dot
-      "(?:[a-z\\u00a1-\\uffff]{2,}\\.?)" +
-    ")" +
-    // port number (optional)
-    "(?::\\d{2,5})?" +
-    // resource path (optional)
-    "(?:[/?#]\\S*)?" +
-  "$", "i"
-);
-
-
-const INLINE_MATCHES = [
-  // Record
-  {
-    element: 'record',
-    dataProp: 'record',
-    regex: /^@([a-zA-Z0-9]+)$/,
-    searchKey: 'name',
-    getData: ({ records }) => {
-      return Object.values(records).map(r => {
-        let name;
-        if (typeof r.name === 'object') {
-          name = r.name.map(n => Node.string(n))[0];
-        } else {
-          name = r.name;
-        }
-
-        return {
-          ...r,
-          name,
-        }
-      });
-    },
-    stateKey: 'recordMatches',
-  },
-  {
-    element: 'page',
-    dataProp: 'page',
-    regex: /^#([a-zA-Z0-9]+)$/,
-    searchKey: 'name',
-    getData: ({ pages }) => Object.entries(pages).map(([key, page]) => ({ name: page.name, key})),
-    stateKey: 'pageMatches',
-  }
-]
-
-const LIST_TYPES = ['list', 'ordered-list'];
 
 const withInline = editor => {
   const { isInline, isVoid } = editor
@@ -229,66 +148,6 @@ const Leaf = props => {
     </span>
   )
 }
-
-const Formula = ({ attributes, formula, formulaId, children, onChange = () => {} }) => {
-  const [currentFormula, setCurrentFormula] = useState(formula);
-  const [isEditing, setIsEditing] = useState(false);
-
-  if (isEditing) {
-    return (
-      <span {...attributes} className="formula">
-        <Input
-          value={currentFormula}
-          onChange={(e) => setCurrentFormula(e.target.value)}
-          autoFocus
-          onBlur={() => {
-            setIsEditing(false);
-            onChange(currentFormula.length ? currentFormula : '"Set a formula..."', formulaId);
-          }} />
-        {children}
-      </span>
-    );
-  }
-
-  let val;
-  try {
-    //Eval is a required function here to allow users to create their own formulas
-    // eslint-disable-next-line
-    val = eval(currentFormula)
-  } catch (e) {
-    val = `Invalid formula: ${formula}`;
-  }
-
-  return (
-    <span {...attributes} className="formula" onClick={() => setIsEditing(true)}>
-      {val}
-      {children}
-    </span>
-  )
-}
-
-const Callout = ({ color, attributes, children, onChangeColor }) => (
-  <div className={classNames('callout', color || 'gray')} {...attributes}>
-    <Popover
-      className="lightbulb-popover"
-      options={[
-        { text: 'Gray', onClick: () => onChangeColor('gray')},
-        { text: 'Blue', onClick: () => onChangeColor('blue') },
-        { text: 'Red', onClick: () => onChangeColor('red') },
-        { text: 'Orange', onClick: () => onChangeColor('orange') },
-        { text: 'Green', onClick: () => onChangeColor('green') },
-        { text: 'Yellow', onClick: () => onChangeColor('yellow') },
-      ]}
-      style={{ userSelect: "none" }}
-      contentEditable={false}
-    >
-      <Icon
-        icon="lightbulb"
-        className="lightbulb" />
-    </Popover>
-    {children}
-  </div>
-);
 
 const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rollAction, setActiveRecord: tablesSetActiveRecord })(({
   attributes,

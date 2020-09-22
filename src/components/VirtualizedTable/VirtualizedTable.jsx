@@ -362,7 +362,7 @@ class VirtualizedTable extends React.Component {
     const scrollBottom = tableRef.current.clientHeight + tableRef.current.scrollTop;
 
     const isScrollingDown = useScrollDirection ? this.lastScrollTop < tableRef.current.scrollTop : true;
-    const isScrollingUp = useScrollDirection ? this.lastScrollTop > tableRef.current.scrollTop : true;
+    const isScrollingUp = useScrollDirection ? !isScrollingDown : true;
     const hasMoreThanLimit = filteredRecords.length > limit;
 
     if (tableRef.current.scrollTop >= (aboveHeights + (loadedHeight / 3)) && isScrollingDown && hasMoreThanLimit) {
