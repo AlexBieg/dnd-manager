@@ -55,13 +55,8 @@ Each column can be renamed and reordered. A filter text box can be used to filte
 Each row can be dragged to reorder. Rows can be deleted using the menu. And Rows can be added above also using the menu.
 
 ## Future Improvements
-1. Improve the dice rolling regular expression to better capture all dice text
-3. Add better drag and drop to the pages list as it can be wonky in certain edge cases
-4. Add sorting to tables. (The functionality should be super easy to add, but I'm kinda stuck an a good UI)
-5. Add the ability to create custom templates for both pages and tables. This would allow users to create initative tables that fit their needs and not have to recreate it on every page.
+1. Add the ability to create custom templates for both pages and tables. This would allow users to create initative tables that fit their needs and not have to recreate it on every page.
 6. Add cell expressions to allow computed cell values. In my head it would be easiest to just allow users to write JS here, but I recognize that may not be a viable solution for non-programmers
 7. Related to the above item, allow user to create inline text expressions using data from tables. I imagine this would work in a format similar to `@goblin.HP` to reference a monster's health for whatever calculations might be needed.
 7. Improve table performance. Honestly this isn't too bad right now, but since I ended up implementing a virtualized-adjacent table myself there can be some lag from time to time
-8. Add a back button for going back between pages
 9. Add undo functionality
-9. Add image previews when there is a URL present
