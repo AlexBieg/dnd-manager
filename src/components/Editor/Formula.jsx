@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { getTables } from 'reducers/tables';
 import Input from 'components/Input';
 
 const Formula = ({ attributes, formula, formulaId, children, onChange = () => {} }) => {
   const [currentFormula, setCurrentFormula] = useState(formula);
   const [isEditing, setIsEditing] = useState(false);
+  const tables = useSelector(getTables);
+
+  const getTableIdsByName = (name) => {
+    return Object.entries(tables).filter(([_id, table]) => table.name === name).map(([id]) => id);
+  }
 
   if (isEditing) {
     return (
@@ -27,7 +34,16 @@ const Formula = ({ attributes, formula, formulaId, children, onChange = () => {}
     // eslint-disable-next-line
     val = eval(currentFormula)
   } catch (e) {
+    console.log(e);
     val = `Invalid formula: ${formula}`;
+  }
+
+  if (typeof val === 'object') {
+    val = val.toString();
+  }
+
+  if (!val) {
+    val = 'No returned value';
   }
 
   return (

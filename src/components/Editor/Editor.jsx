@@ -253,7 +253,7 @@ class CustomEditor extends Component {
     return (
       <Element
         {...props}
-        setonChangeFormula={this.onChangeFormula}
+        onChangeFormula={this.onChangeFormula}
         onChangeCalloutColor={this.onChangeCalloutColor}
       />
     );
@@ -271,6 +271,7 @@ class CustomEditor extends Component {
   }
 
   onChangeFormula = (formula, formulaId) => {
+    console.log('changing formula');
     const { editor } = this.state;
     const node = [...Node.elements(editor)].find(([el]) => el.formulaId === formulaId);
     Transforms.setNodes(editor, { formula }, { at: node[1]});
