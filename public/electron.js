@@ -28,7 +28,15 @@ function createWindow() {
   });
 
   electron.ipcMain.on('load-user-data', function(event, data) {
-    mainWindow.webContents.send('user-data', fs.readFileSync(userDataFilePath, {encoding:'utf8', flag:'r'}));
+    let userData;
+
+    try {
+      userData = fs.readFileSync(userDataFilePath, {encoding:'utf8', flag:'r'});
+    } catch (e) {
+      userData = '{}'; // Empty json object
+    }
+
+    mainWindow.webContents.send('user-data', userData);
   });
 }
 
