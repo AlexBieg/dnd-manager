@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { rollAction, getRolls } from 'reducers/rolls';
+import { rollAction, getPastRolls, getCurrentRoll } from 'reducers/rolls';
 import Button from 'components/Button';
 import Input from 'components/Input';
 import './Roller.scss';
@@ -8,10 +8,15 @@ import './Roller.scss';
 const Roller = () => {
   const dispatch = useDispatch();
   const [rollText, setRollText] = useState('');
-  const prevRolls = useSelector(getRolls);
+  const prevRolls = useSelector(getPastRolls);
+  const currentRoll = useSelector(getCurrentRoll);
   const [prevRollIndex, setprevRollIndex] = useState(-1);
 
   const onKey = (event) => {
+    if (currentRoll) {
+      return;
+    }
+
     if (event.key === 'Enter') {
       onSubmit();
       return;
@@ -48,7 +53,7 @@ const Roller = () => {
         type='text'
         onChange={(event) => setRollText(event.target.value)}
         onKeyDown={onKey}/>
-      <Button value="Roll" onClick={onSubmit} />
+      <Button value="Roll" onClick={onSubmit} disabled={!!currentRoll} />
     </div>
   );
 };

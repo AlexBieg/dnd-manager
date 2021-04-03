@@ -42,7 +42,7 @@ const makeDie = (sides) => {
   dice.getObject().position.z = 20;
   dice.getObject().quaternion.x = (Math.random()*90-45) * Math.PI / 180;
   dice.getObject().quaternion.z = (Math.random()*90-45) * Math.PI / 180;
-  dice.getObject().body.velocity.set(40 * Math.random() - 20, 40 * Math.random() - 20, 40 * Math.random() - 20);
+  dice.getObject().body.velocity.set(60 * Math.random() - 30, 60 * Math.random() - 30, 60 * Math.random() - 30);
   dice.getObject().body.angularVelocity.set(20 * Math.random() -10, 20 * Math.random() -10, 20 * Math.random() -10);
   dice.updateBodyFromMesh();
 
@@ -64,7 +64,7 @@ class Dice extends Component {
     }
 
     const world = new CANNON.World();
-    world.gravity.set(0,0,-9.82 * 3);
+    world.gravity.set(0,0,-9.82 * 5);
     world.broadphase = new CANNON.NaiveBroadphase();
     world.solver.iterations = 16;
 
@@ -95,7 +95,7 @@ class Dice extends Component {
     world.addBody(leftWallBody)
 
     var topWallBody = new CANNON.Body({
-      position: new CANNON.Vec3(0, 30, 0),
+      position: new CANNON.Vec3(0, 40, 0),
       shape: new CANNON.Plane()
     });
     var axis = new CANNON.Vec3(1,0,0);
@@ -104,7 +104,7 @@ class Dice extends Component {
     world.addBody(topWallBody)
 
     var bottomWallBody = new CANNON.Body({
-      position: new CANNON.Vec3(0, -20, 0),
+      position: new CANNON.Vec3(0, -40, 0),
       shape: new CANNON.Plane()
     });
     var axis = new CANNON.Vec3(1,0,0);
