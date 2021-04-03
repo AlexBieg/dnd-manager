@@ -26,16 +26,41 @@ const getUpsideValue = (dice) => {
 }
 
 const SIDE_TO_TYPE = {
-  4: DiceD4,
-  6: DiceD6,
-  8: DiceD8,
-  10: DiceD10,
-  12: DiceD12,
-  20: DiceD20
+  4: {
+    type: DiceD4,
+    backColor: '#93b139',
+    fontColor: '#ffffff',
+  },
+  6: {
+    type: DiceD6,
+    backColor: '#d68316',
+    fontColor: '#ffffff',
+  },
+  8: {
+    type: DiceD8,
+    backColor: '#5eb0c5',
+    fontColor: '#ffffff',
+  },
+  10: {
+    type: DiceD10,
+    backColor: '#c74749',
+    fontColor: '#ffffff',
+  },
+  12: {
+    type: DiceD12,
+    backColor: '#7339be',
+    fontColor: '#ffffff',
+  },
+  20: {
+    type: DiceD20,
+    backColor: '#171120',
+    fontColor: '#ff0000',
+  },
 }
 
 const makeDie = (sides) => {
-  var dice = new SIDE_TO_TYPE[sides]({backColor: '#ff0000', size: 5});
+  const config = SIDE_TO_TYPE[sides]
+  var dice = new config.type({backColor: config.backColor, fontColor: config.fontColor, size: 5});
 
   dice.getObject().position.x = 40 * Math.random() - 20;
   dice.getObject().position.y = 40 * Math.random() - 20;
@@ -47,6 +72,16 @@ const makeDie = (sides) => {
   dice.updateBodyFromMesh();
 
   return dice;
+}
+
+const makeWall = (pos, axis, angle) => {
+  var wallBody = new CANNON.Body({
+    position: pos,
+    shape: new CANNON.Plane(),
+  });
+  wallBody.quaternion.setFromAxisAngle(axis, angle);
+
+  return wallBody;
 }
 
 class Dice extends Component {
@@ -75,42 +110,10 @@ class Dice extends Component {
     groundBody.addShape(groundShape);
     world.addBody(groundBody);
 
-    var rightWallBody = new CANNON.Body({
-      position: new CANNON.Vec3(40, 0, 0),
-      shape: new CANNON.Plane()
-    });
-    var axis = new CANNON.Vec3(0,1,0);
-    var angle = -Math.PI / 2;
-    rightWallBody.quaternion.setFromAxisAngle(axis, angle);
-    world.addBody(rightWallBody)
-
-
-    var leftWallBody = new CANNON.Body({
-      position: new CANNON.Vec3(-40, 0, 0),
-      shape: new CANNON.Plane()
-    });
-    var axis = new CANNON.Vec3(0,1,0);
-    var angle = Math.PI / 2;
-    leftWallBody.quaternion.setFromAxisAngle(axis, angle);
-    world.addBody(leftWallBody)
-
-    var topWallBody = new CANNON.Body({
-      position: new CANNON.Vec3(0, 40, 0),
-      shape: new CANNON.Plane()
-    });
-    var axis = new CANNON.Vec3(1,0,0);
-    var angle = Math.PI / 2;
-    topWallBody.quaternion.setFromAxisAngle(axis, angle);
-    world.addBody(topWallBody)
-
-    var bottomWallBody = new CANNON.Body({
-      position: new CANNON.Vec3(0, -40, 0),
-      shape: new CANNON.Plane()
-    });
-    var axis = new CANNON.Vec3(1,0,0);
-    var angle = -Math.PI / 2;
-    bottomWallBody.quaternion.setFromAxisAngle(axis, angle);
-    world.addBody(bottomWallBody)
+    world.addBody(makeWall(new CANNON.Vec3(40, 0, 0), new CANNON.Vec3(0,1,0), -Math.PI / 2))
+    world.addBody(makeWall(new CANNON.Vec3(-40, 0, 0), new CANNON.Vec3(0,1,0), Math.PI / 2))
+    world.addBody(makeWall(new CANNON.Vec3(0, 40, 0), new CANNON.Vec3(1,0,0), Math.PI / 2))
+    world.addBody(makeWall(new CANNON.Vec3(0, -40, 0), new CANNON.Vec3(1,0,0), -Math.PI / 2))
 
     const width = this.mount.current.clientWidth;
     const height = this.mount.current.clientHeight;
@@ -118,19 +121,25 @@ class Dice extends Component {
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(30, width/height, 0.1, 1000 );
     const renderer = new THREE.WebGLRenderer({ alpha: true });
-    const light = new THREE.AmbientLight( 0xD0D0D0 );
+    const light = new THREE.AmbientLight( 0xFFFFFF );
+    scene.add(light);
     renderer.setSize( width, height);
     renderer.setClearColor( 0x000000, 0 );
-    scene.add(light);
+
+    const pLight = new THREE.PointLight( 0xFFFFFF, 0.7, 100 );
+    pLight.position.set( 0, 10, 30 );
+    scene.add( pLight );
 
     DiceManager.setWorld(world);
 
     const dice = []
     const strangeSides = []
+    const normalSides = []
 
     for (let i = 0; i < currentRoll.dice.length; i++) {
       const sides = currentRoll.dice[i]
       if (sides in SIDE_TO_TYPE) {
+        normalSides.push(sides);
         const die = makeDie(sides)
         scene.add(die.getObject());
 
@@ -173,9 +182,11 @@ class Dice extends Component {
       } else {
         const results = []
         let sum = currentRoll.shift;
-        for (const die of dice) {
+        for (let i = 0; i < dice.length; i++) {
+          const die = dice[i]
           const val = getUpsideValue(die)
-          results.push([val, die.faces.length])
+          console.log(die);
+          results.push([val, normalSides[i]])
           sum += val;
         }
 

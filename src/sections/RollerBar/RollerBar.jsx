@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Roller from 'components/Roller';
-import RollerOutput from 'components/RollOutput';
+import RollOutput from 'components/RollOutput';
 import DragBar from 'components/DragBar';
 import { getRollerbarWidth, settingsSetRollerbarWidth } from 'reducers/settings';
 
@@ -23,7 +23,7 @@ const RollerBar = () => {
         onDrag={(clientX) => setCurrentWidth(window.innerWidth - clientX)} />
       <div className="roller-bar-content">
         <Roller />
-        <RollerOutput />
+        <RollOutput />
       </div>
     </div>
   )
