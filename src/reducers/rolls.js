@@ -1,64 +1,92 @@
 import { get } from 'lodash';
+import { createSelector } from 'reselect';
 
 // Utils
 const diceRegex = /(?<number>\d+)?[dD](?<sides>\d+)/;
 const numRegex = /^[+-][0-9]+$/
 
-const rollDice = (text) => {
-  const results = [];
+const parseRollText = (text) => {
   let shift = 0;
+  const dice = []
 
   const allDice = text.split(/(?=[+-])/).filter(v => v.length > 0)
 
-  for (const dice of allDice) {
-    if (numRegex.test(dice)) {
-      shift += parseInt(dice)
+  for (const diceText of allDice) {
+    if (numRegex.test(diceText)) {
+      shift += parseInt(diceText)
       continue;
     }
 
-    const match = (dice || '').match(diceRegex);
+    const match = (diceText || '').match(diceRegex);
     const data = get(match, 'groups', {});
 
-    data.sides = parseInt(data.sides);
-    data.number = parseInt(data.number) || 1;
+    const sides = parseInt(data.sides);
+    const number = parseInt(data.number) || 1;
 
-    for (let i = 0; i < data.number; i++) {
-      results.push([Math.floor(Math.random() * data.sides + 1), data.sides]);
+    for (let i = 0; i < number; i++) {
+      dice.push(sides);
     }
   }
 
   return {
-    results,
-    shift: shift,
-    sum: results.reduce((acc, [val, sides]) => acc + val, 0) + shift,
+    dice,
+    shift,
+    text,
   };
 }
 
 // Selectors
 export const getRolls = (state) => state.rolls;
+export const getCurrentRoll = createSelector(
+  getRolls,
+  rolls => rolls.currentRoll,
+)
+export const getPastRolls = createSelector(
+  getRolls,
+  rolls => rolls.pastRolls,
+)
 
 // Actions
 const ROLLS_ROLL = 'ROLLS_ROLL';
+const ROLLS_LOG_ROLL = 'ROLLS_LOG_ROll';
 
 // Action Creators
 export const rollAction = (rollText) => {
   return {
     type: ROLLS_ROLL,
-    data: {
-      rollText,
-      ...rollDice(rollText),
-    },
+    data: parseRollText(rollText),
   }
 };
 
+export const logRollAction = (results) => {
+  return {
+    type: ROLLS_LOG_ROLL,
+    data: results,
+  }
+}
+
+const initialState = {
+  pastRolls: [],
+  currentRoll: null,
+}
+
 // Reducer
-const rolls = (state=[], { type, data}) => {
+const rolls = (state=initialState, { type, data}) => {
   switch (type) {
     case ROLLS_ROLL:
-      return [
-        { ...data },
+      return {
         ...state,
-      ]
+        currentRoll: data
+      }
+    case ROLLS_LOG_ROLL:
+      return {
+        ...state,
+        currentRoll: null,
+        pastRolls: [
+          {...data},
+          ...state.pastRolls,
+        ]
+      }
     default:
       return state;
   }

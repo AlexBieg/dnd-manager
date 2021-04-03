@@ -1,20 +1,18 @@
 import React from 'react';
 import classNames from 'classnames';
 import { useSelector, useDispatch } from 'react-redux';
-import { getRolls, rollAction } from 'reducers/rolls';
+import { getPastRolls, rollAction } from 'reducers/rolls';
 
 import './RollOutput.scss';
 
 const DICE_OPTIONS = [2, 4, 6, 8, 10, 12, 20]
-
-
 
 const Dice = ({ number, disabled, sides }) => (
   <i className={classNames(`df-d${sides}-${number}`, 'die', {disabled})}>{!DICE_OPTIONS.includes(sides) ? number : ''}</i>
 );
 
 const RollOutput = () => {
-  const rolls = useSelector(getRolls);
+  const rolls = useSelector(getPastRolls);
   const dispatch = useDispatch();
 
   const rollsOutput = rolls.map((roll) => {

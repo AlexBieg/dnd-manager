@@ -15,6 +15,7 @@ import { v4 as uuidV4 } from 'uuid';
 import Popover from 'react-tiny-popover';
 import PopoverMenu from 'components/PopoverMenu';
 import Icon from 'components/Icon';
+import Dice from 'components/Dice';
 import TableSelector from 'components/TableSelector';
 import Table from 'components/VirtualizedTable';
 import RecordViewer from 'components/RecordViewer';
@@ -163,6 +164,7 @@ const Page = ({ pageId }) => {
   return (
     <div className="page" id="page">
       <RecordViewer />
+      <Dice />
       <div className="page-navigation">
         <Icon className={classNames({ disabled: previousPages.length === 0 })} icon="chevron-left" onClick={() => dispatch(pagesGoBack())}/>
         <Icon className={classNames({ disabled: nextPages.length === 0 })} icon="chevron-right" onClick={() => dispatch(pagesGoForward())}/>
