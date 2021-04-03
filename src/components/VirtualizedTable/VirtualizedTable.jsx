@@ -26,7 +26,6 @@ import Icon from 'components/Icon';
 import Input from 'components/Input';
 import Popover from 'components/Popover';
 
-// import 'react-virtualized/styles.css'
 import './VirtualizedTable.scss';
 
 const HeaderDragHandle = SortableHandle(() => (

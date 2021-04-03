@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import { connect } from 'react-redux';
 import CANNON from 'cannon';
 import { DiceD4, DiceD6, DiceD20, DiceD8, DiceD10, DiceD12, DiceManager } from './dice-models';
-import { getCurrentRoll, logRollAction } from 'reducers/rolls';
+import { getCurrentRoll, logRollAction, cancelRollAction } from 'reducers/rolls';
 import './Dice.scss';
 
 
@@ -210,14 +210,14 @@ class Dice extends Component {
   }
 
   render() {
-    const { currentRoll } = this.props;
+    const { currentRoll, cancelRoll } = this.props;
 
     if (!currentRoll) {
       return null;
     }
 
     return (
-      <div className="dice-container" ref={this.mount} />
+      <div className="dice-container" ref={this.mount} onClick={cancelRoll} />
     )
   }
 }
@@ -227,7 +227,8 @@ const mapStateToProps = (state, props) => ({
 })
 
 const mapDispatchToProps = {
-  logRoll: logRollAction
+  logRoll: logRollAction,
+  cancelRoll: cancelRollAction,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Dice);

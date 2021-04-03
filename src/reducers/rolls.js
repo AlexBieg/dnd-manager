@@ -49,6 +49,7 @@ export const getPastRolls = createSelector(
 // Actions
 const ROLLS_ROLL = 'ROLLS_ROLL';
 const ROLLS_LOG_ROLL = 'ROLLS_LOG_ROll';
+const ROLLS_LOG_CANCEL_ROLL = 'ROLLS_LOG_CANCEL_ROLL';
 
 // Action Creators
 export const rollAction = (rollText) => {
@@ -63,6 +64,10 @@ export const logRollAction = (results) => {
     type: ROLLS_LOG_ROLL,
     data: results,
   }
+}
+
+export const cancelRollAction = () => {
+  return { type: ROLLS_LOG_CANCEL_ROLL }
 }
 
 const initialState = {
@@ -86,6 +91,11 @@ const rolls = (state=initialState, { type, data}) => {
           {...data},
           ...state.pastRolls,
         ]
+      }
+    case ROLLS_LOG_CANCEL_ROLL:
+      return {
+        ...state,
+        currentRoll: null,
       }
     default:
       return state;
