@@ -9,6 +9,7 @@ import './index.scss';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import baseReducer from './reducers';
+import throttledMiddleware from './middleware/throttle';
 const electron = window.require('electron');
 const ipcRenderer  = electron.ipcRenderer;
 
@@ -24,7 +25,7 @@ ipcRenderer.on('user-data', (e, data) => {
   const store = createStore(
     baseReducer,
     JSON.parse(data),
-    applyMiddleware(logger, saver),
+    applyMiddleware(throttledMiddleware, logger, saver),
   );
 
   window.store = store;

@@ -416,20 +416,12 @@ class CustomEditor extends Component {
       if (match) {
         const roller = {
           type: 'roller',
-          dice: match[2],
+          dice: match[0],
           children: [{ text: '' }]
-        }
-
-        if (prevWord.startsWith('(')) {
-          Transforms.insertText(editor, '(');
         }
 
         Transforms.insertNodes(editor, roller);
         Transforms.move(editor, { distance: 1 });
-
-        if (prevWord.endsWith(')')) {
-          Transforms.insertText(editor, ')');
-        }
       }
 
       if (prevWord === '$()') {

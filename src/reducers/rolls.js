@@ -1,42 +1,36 @@
 import { get } from 'lodash';
 
 // Utils
-const reg = /(?<number>\d+)?[dD](?<sides>\d+)(?<shift>[+-]\d+)?(?<adDis>[ad])?/;
+const diceRegex = /(?<number>\d+)?[dD](?<sides>\d+)/;
+const numRegex = /^[+-][0-9]+$/
 
 const rollDice = (text) => {
   const results = [];
-  const adDisAlt = [];
+  let shift = 0;
 
-  const match = (text || '').match(reg);
-  const data = get(match, 'groups', {});
+  const allDice = text.split(/(?=[+-])/).filter(v => v.length > 0)
 
-  data.sides = parseInt(data.sides);
-  data.number = parseInt(data.number) || 1;
-  data.shift = parseInt(data.shift || 0);
+  for (const dice of allDice) {
+    if (numRegex.test(dice)) {
+      shift += parseInt(dice)
+      continue;
+    }
 
-  for (let i = 0; i < data.number; i++) {
-    if (data.adDis === 'a') {
-      const a = Math.floor(Math.random() * data.sides + 1);
-      const b = Math.floor(Math.random() * data.sides + 1);
+    const match = (dice || '').match(diceRegex);
+    const data = get(match, 'groups', {});
 
-      results.push(Math.max(a, b));
-      adDisAlt.push(Math.min(a, b));
-    } else if (data.adDis === 'd') {
-      const a = Math.floor(Math.random() * data.sides + 1);
-      const b = Math.floor(Math.random() * data.sides + 1);
+    data.sides = parseInt(data.sides);
+    data.number = parseInt(data.number) || 1;
 
-      results.push(Math.min(a, b));
-      adDisAlt.push(Math.max(a, b));
-    } else {
-      results.push(Math.floor(Math.random() * data.sides + 1));
+    for (let i = 0; i < data.number; i++) {
+      results.push([Math.floor(Math.random() * data.sides + 1), data.sides]);
     }
   }
 
   return {
     results,
-    adDisAlt,
-    shift: data.shift,
-    sum: results.reduce((acc, r) => acc + r, 0) + (data.shift || 0),
+    shift: shift,
+    sum: results.reduce((acc, [val, sides]) => acc + val, 0) + shift,
   };
 }
 

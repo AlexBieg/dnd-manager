@@ -1,3 +1,48 @@
+@keyframes rainbow{
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(359deg);
+  }
+  // 100%,0%{
+  //   -webkit-text-fill-color: rgb(255,0,0);
+  // }
+  // 8%{
+  //   -webkit-text-fill-color: rgb(255,127,0);
+  // }
+  // 16%{
+  //   -webkit-text-fill-color: rgb(255,255,0);
+  // }
+  // 25%{
+  //   -webkit-text-fill-color: rgb(127,255,0);
+  // }
+  // 33%{
+  //   -webkit-text-fill-color: rgb(0,255,0);
+  // }
+  // 41%{
+  //   -webkit-text-fill-color: rgb(0,255,127);
+  // }
+  // 50%{
+  //   -webkit-text-fill-color: rgb(0,255,255);
+  // }
+  // 58%{
+  //   -webkit-text-fill-color: rgb(0,127,255);
+  // }
+  // 66%{
+  //   -webkit-text-fill-color: rgb(0,0,255);
+  // }
+  // 75%{
+  //   -webkit-text-fill-color: rgb(127,0,255);
+  // }
+  // 83%{
+  //   -webkit-text-fill-color: rgb(255,0,255);
+  // }
+  // 91%{
+  //   -webkit-text-fill-color: rgb(255,0,127);
+  // }
+}
+
 .all-rolls{
   overflow-y: scroll;
   margin-top: 20px;
@@ -30,15 +75,52 @@
       flex-flow: wrap;
     }
 
+
+
     .die {
-      background-color: gray;
-      margin-right: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      display: inline-block;
-      min-width: 40px;
-      min-height: 40px;
-      text-align: center;
+      font-size: 50px;
+      padding-top: 12px;
+      font-style: normal;
+
+      &[class^="df-d2"] {
+        -webkit-text-fill-color: gray;
+      }
+
+      &[class^="df-d20"] {
+        -webkit-text-fill-color: #9872d6;
+      }
+
+      &.df-d20-1 {
+        -webkit-text-fill-color: #ff4e4e;
+      }
+
+      &.df-d20-20::before {
+        animation: rainbow 2s linear;
+        animation-iteration-count: infinite;
+      }
+
+      &[class^="df-d12"] {
+        -webkit-text-fill-color: #b8cbce;
+      }
+
+      &[class^="df-d10"] {
+        -webkit-text-fill-color: #c74749;
+      }
+
+      &[class^="df-d8"] {
+        -webkit-text-fill-color: #5eb0c5;
+      }
+
+      &[class^="df-d6"] {
+        -webkit-text-fill-color: #d198d2;
+      }
+
+      &[class^="df-d4"] {
+        -webkit-text-fill-color: #c5d790;
+      }
+
+
+
 
       &.disabled {
         opacity: 0.5;

@@ -49,6 +49,10 @@
           text-align: left;
           position: sticky;
           top: 0;
+
+          &:first-child {
+            border: none;
+          }
         }
         td {
           border-bottom: 1px solid #ececec;
@@ -57,12 +61,24 @@
           vertical-align: top;
           word-break: break-word;
 
+          &:first-child {
+            border: none;
+            opacity: 0;
+          }
+
           &:last-child {
             border-right: 0px;
           }
 
           .editor {
             border-left: 0px;
+            padding-left: 5px;
+          }
+        }
+
+        &:hover {
+          td:first-child {
+            opacity: 1
           }
         }
       }
@@ -129,8 +145,10 @@
     align-items: baseline;
     overflow: hidden;
 
-    .grip-lines {
-      padding: 0px 10px;
+    i.menu {
+      padding: 0px;
+      padding-left: 5px;
+      padding-right: 5px;
     }
   }
 

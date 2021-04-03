@@ -1,4 +1,7 @@
-export const DICE_REGEX = /^(^|\s|\()+(?<dice>(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?)(\))?$/;
+import { Node } from 'slate';
+
+// export const DICE_REGEX = /^(^|\s|\()+(?<dice>(\d+)?[dD](\d+)(\s)?([+-](\s)?\d+)?)(\))?$/;
+export const DICE_REGEX = /^(^|\s|\()(?<dice>([+-]?(?<number>\d+)?[dD](?<sides>\d+)|[+-][0-9]+))+(\))?$/
 export const IMG_URL_REGEX = /\.(jpeg|jpg|gif|png)(\?|$)/;
 export const URL_REGEX = new RegExp(
   "^" +

@@ -359,6 +359,7 @@ class Table extends React.PureComponent {
       table,
       rows,
       editName,
+      filterable=false
     } = this.props;
     const {
       searchTerm,
@@ -436,7 +437,7 @@ class Table extends React.PureComponent {
           <TitleToolbar name={table.name} onChange={(e) => editName(id, e.target.value)}/>
           <CustomTableEditColumn onAddColumn={this.onAddColumn}/>
           <TableEditRow />
-          <TableFilterRow cellComponent={FilterCell} />
+          {filterable && <TableFilterRow cellComponent={FilterCell} />}
           <TableInlineCellEditing />
         </Grid>
       </div>

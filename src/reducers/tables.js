@@ -39,6 +39,11 @@ export const getRecordById = (id) => createSelector(
   (records) => records[id],
 )
 
+export const getFilterableById = (id) => createSelector(
+  getTableById(id),
+  (table) => get(table, 'filterable', false)
+)
+
 // Actions
 const TABLES_ADD_ROW = 'TABLES_ADD_ROW';
 const TABLES_DEL_ROW = 'TABLES_DEL_ROW';
@@ -56,6 +61,8 @@ const TABLES_DELETE_TABLE = 'TABLES_DELETE_TABLE';
 const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
 
 const TABLES_SET_ACTIVE_RECORD = 'TABLES_SET_ACTIVE_RECORD';
+
+const TABLES_TOGGLE_FILTERS = 'TABLES_TOGGLE_FILTERS';
 
 // Action Creators
 export const tablesSetFilters = (id, filters) => ({
@@ -211,6 +218,13 @@ export const tableEditCols = (id, cols) => {
   }
 }
 
+export const tableToggleFilters = (id) => {
+  return {
+    type: TABLES_TOGGLE_FILTERS,
+    data: id,
+  }
+}
+
 // Init State
 const INITIAL_STATE = {
   tables: {},
@@ -222,6 +236,17 @@ const INITIAL_STATE = {
 const tables = (state=INITIAL_STATE, { type, data }) => {
   let rows;
   switch (type) {
+    case TABLES_TOGGLE_FILTERS:
+      return {
+        ...state,
+        tables: {
+          ...state.tables,
+          [data]: {
+            ...state.tables[data],
+            filterable: !state.tables[data].filterable,
+          }
+        }
+      }
     case TABLES_SET_FILTERS:
       return {
         ...state,

@@ -8,6 +8,8 @@ const Formula = ({ attributes, formula, formulaId, children, onChange = () => {}
   const [isEditing, setIsEditing] = useState(false);
   const tables = useSelector(getTables);
 
+  // This function can be used within the formulas
+  // eslint-disable-next-line
   const getTableIdsByName = (name) => {
     return Object.entries(tables).filter(([_id, table]) => table.name === name).map(([id]) => id);
   }
