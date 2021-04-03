@@ -25,11 +25,13 @@ const withInline = editor => {
   inlines.push('link');
   inlines.push('image')
   inlines.push('formula');
+  inlines.push('checkbox')
 
   const voids = INLINE_MATCHES.map(c => c.element);
   voids.push('image');
   voids.push('roller');
   voids.push('formula');
+  voids.push('checkbox')
 
   editor.isInline = element => {
     return inlines.includes(element.type) ? true : isInline(element)
@@ -158,6 +160,7 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
   setActiveRecord,
   onChangeFormula,
   onChangeCalloutColor,
+  onToggleCheckbox,
 }) => {
   switch (element.type) {
     case 'h1':
@@ -224,6 +227,8 @@ const Element = connect(() => ({}), { setPage: pagesSetActivePage, rollDice: rol
           {children}
         </Formula>
       )
+    case 'checkbox':
+      return <input type='checkbox' checked={element.value} onChange={(e) => onToggleCheckbox(e, element)} />
     default:
       return <p {...attributes}>{children}</p>
   }
@@ -255,6 +260,7 @@ class CustomEditor extends Component {
         {...props}
         onChangeFormula={this.onChangeFormula}
         onChangeCalloutColor={this.onChangeCalloutColor}
+        onToggleCheckbox={this.onToggleCheckbox}
       />
     );
   }
@@ -271,10 +277,15 @@ class CustomEditor extends Component {
   }
 
   onChangeFormula = (formula, formulaId) => {
-    console.log('changing formula');
     const { editor } = this.state;
     const node = [...Node.elements(editor)].find(([el]) => el.formulaId === formulaId);
     Transforms.setNodes(editor, { formula }, { at: node[1]});
+  }
+
+  onToggleCheckbox = (e, element) => {
+    const { editor } = this.state;
+    const path = ReactEditor.findPath(editor, element)
+    Transforms.setNodes(editor, { value: e.target.checked}, { at: path })
   }
 
   onChange = (newValue) => {
@@ -505,6 +516,17 @@ class CustomEditor extends Component {
 
       case 'u': {
         editor.redo();
+        break;
+      }
+
+      case 't': {
+        const checkbox = {
+          type: 'checkbox',
+          value: false,
+          children: [{ text: '' }],
+        }
+        Transforms.insertNodes(editor, checkbox);
+        Transforms.move(editor, { distance: 2 });
         break;
       }
 

@@ -58,17 +58,27 @@ const SIDE_TO_TYPE = {
   },
 }
 
+const randomVelocity = (max, min) => {
+  const base = Math.random() * (max - min) + min
+
+  if (Math.random() > 0.5) {
+    return -base;
+  }
+
+  return base;
+}
+
 const makeDie = (sides) => {
   const config = SIDE_TO_TYPE[sides]
-  var dice = new config.type({backColor: config.backColor, fontColor: config.fontColor, size: 5});
+  var dice = new config.type({backColor: config.backColor, fontColor: config.fontColor, size: 5, mass: 0.1 });
 
   dice.getObject().position.x = 40 * Math.random() - 20;
   dice.getObject().position.y = 40 * Math.random() - 20;
   dice.getObject().position.z = 20;
   dice.getObject().quaternion.x = (Math.random()*90-45) * Math.PI / 180;
   dice.getObject().quaternion.z = (Math.random()*90-45) * Math.PI / 180;
-  dice.getObject().body.velocity.set(60 * Math.random() - 30, 60 * Math.random() - 30, 60 * Math.random() - 30);
-  dice.getObject().body.angularVelocity.set(20 * Math.random() -10, 20 * Math.random() -10, 20 * Math.random() -10);
+  dice.getObject().body.velocity.set(randomVelocity(50, 10), randomVelocity(50, 10), 2)
+  dice.getObject().body.angularVelocity.set(randomVelocity(10, 5), randomVelocity(10, 5), randomVelocity(10, 5));
   dice.updateBodyFromMesh();
 
   return dice;
@@ -99,7 +109,7 @@ class Dice extends Component {
     }
 
     const world = new CANNON.World();
-    world.gravity.set(0,0,-9.82 * 5);
+    world.gravity.set(0,0,-9.82 * 10);
     world.broadphase = new CANNON.NaiveBroadphase();
     world.solver.iterations = 16;
 
@@ -126,7 +136,7 @@ class Dice extends Component {
     renderer.setSize( width, height);
     renderer.setClearColor( 0x000000, 0 );
 
-    const pLight = new THREE.PointLight( 0xFFFFFF, 0.7, 100 );
+    const pLight = new THREE.PointLight( 0xF0F0F0, 0.7, 100 );
     pLight.position.set( 0, 10, 30 );
     scene.add( pLight );
 
@@ -155,7 +165,7 @@ class Dice extends Component {
     camera.position.z = 150;
 
     let stableCount = dice.map(d => 0);
-    const threshold = .01;
+    const threshold = .1;
 
     function animate() {
       world.step(1/60);
@@ -210,14 +220,14 @@ class Dice extends Component {
   }
 
   render() {
-    const { currentRoll, cancelRoll } = this.props;
+    const { currentRoll } = this.props;
 
     if (!currentRoll) {
       return null;
     }
 
     return (
-      <div className="dice-container" ref={this.mount} onClick={cancelRoll} />
+      <div className="dice-container" ref={this.mount} />
     )
   }
 }
