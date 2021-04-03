@@ -44,6 +44,11 @@ export const getFilterableById = (id) => createSelector(
   (table) => get(table, 'filterable', false)
 )
 
+export const getCollapsedById = (id) => createSelector(
+  getTableById(id),
+  (table) => get(table, 'collapsed', false)
+)
+
 // Actions
 const TABLES_ADD_ROW = 'TABLES_ADD_ROW';
 const TABLES_DEL_ROW = 'TABLES_DEL_ROW';
@@ -63,6 +68,7 @@ const TABLES_IMPORT_TABLE = 'TABLES_IMPORT_TABLE';
 const TABLES_SET_ACTIVE_RECORD = 'TABLES_SET_ACTIVE_RECORD';
 
 const TABLES_TOGGLE_FILTERS = 'TABLES_TOGGLE_FILTERS';
+const TABLES_COLLAPSE = 'TABLES_COLLAPSE';
 
 // Action Creators
 export const tablesSetFilters = (id, filters) => ({
@@ -225,6 +231,13 @@ export const tableToggleFilters = (id) => {
   }
 }
 
+export const tableCollapse = (id) => {
+  return {
+    type: TABLES_COLLAPSE,
+    data: id,
+  }
+}
+
 // Init State
 const INITIAL_STATE = {
   tables: {},
@@ -236,6 +249,17 @@ const INITIAL_STATE = {
 const tables = (state=INITIAL_STATE, { type, data }) => {
   let rows;
   switch (type) {
+    case TABLES_COLLAPSE:
+      return {
+        ...state,
+        tables: {
+          ...state.tables,
+          [data]: {
+            ...state.tables[data],
+            collapsed: !state.tables[data].collapsed,
+          }
+        }
+      }
     case TABLES_TOGGLE_FILTERS:
       return {
         ...state,

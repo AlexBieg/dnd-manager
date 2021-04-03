@@ -18,6 +18,8 @@ import {
   getFiltersByTableId,
   tablesSetFilters,
   tableToggleFilters,
+  getCollapsedById,
+  tableCollapse,
 } from 'reducers/tables';
 import { Node } from 'slate'
 import Editor from 'components/Editor';
@@ -430,7 +432,7 @@ class VirtualizedTable extends React.Component {
   }
 
   render() {
-    const { table, id, filterable } = this.props;
+    const { table, id, filterable, collapsed, collapse } = this.props;
     const { filteredRecords, outerHeight, limit, offset, filters, tableRef, rowHeights } = this.state;
 
     if (!table) {
@@ -443,39 +445,44 @@ class VirtualizedTable extends React.Component {
           <ManagedEditableText text={table.name} onChange={(e) => this.onChangeTableName(e.target.value)} />
           <Icon icon="plus" onClick={this.onAddRow(0)} />
           <Icon icon="columns" onClick={this.onAddColumn} />
-          <Icon icon="filter" onClick={this.onToggleFilters}/>
+          <Icon icon="filter" onClick={this.onToggleFilters} />
+          <Icon icon={collapsed ? 'chevron-right' : 'chevron-down'} onClick={() => collapse(id)} />
         </div>
-        <div className="v-table-grid" onScroll={this.handleScroll} ref={tableRef}>
-          <table cellSpacing="0" cellPadding="0">
-            <thead>
-              <HeaderRow
-                table={table}
-                tableId={id}
-                filters={filters}
-                axis="x"
-                lockAxis="x"
-                onSortEnd={this.onColumnReorder}
+        {
+          !collapsed &&
+          <div className="v-table-grid" onScroll={this.handleScroll} ref={tableRef}>
+            <table cellSpacing="0" cellPadding="0">
+              <thead>
+                <HeaderRow
+                  table={table}
+                  tableId={id}
+                  filters={filters}
+                  axis="x"
+                  lockAxis="x"
+                  onSortEnd={this.onColumnReorder}
+                  useDragHandle
+                  filterable={filterable}
+                />
+              </thead>
+              <DataGrid
+                lockAxis="y"
+                helperClass="dragging-row"
                 useDragHandle
-                filterable={filterable}
-              />
-            </thead>
-            <DataGrid
-              lockAxis="y"
-              helperClass="dragging-row"
-              useDragHandle
-              id={id}
-              onSortEnd={this.onRowReorder}
-              getHelperDimensions={({ node }) => ({
-                height: 40,
-                width: node.offsetWidth,
-              })}
-              filteredRecords={filteredRecords}
-              rowHeights={rowHeights}
-              table={table}
-              limit={limit}
-              offset={offset} />
-          </table>
-        </div>
+                id={id}
+                onSortEnd={this.onRowReorder}
+                getHelperDimensions={({ node }) => ({
+                  height: 40,
+                  width: node.offsetWidth,
+                })}
+                filteredRecords={filteredRecords}
+                rowHeights={rowHeights}
+                table={table}
+                limit={limit}
+                offset={offset} />
+            </table>
+          </div>
+        }
+
       </div>
     );
   }
@@ -485,7 +492,8 @@ const mapStateToProps = (state, props) => ({
   table: getTableById(props.id)(state),
   records: getRecordsByTableId(props.id)(state),
   filters: getFiltersByTableId(props.id)(state),
-  filterable: getFilterableById(props.id)(state)
+  filterable: getFilterableById(props.id)(state),
+  collapsed: getCollapsedById(props.id)(state),
 });
 
 const mapDispatchToProps = {
@@ -495,7 +503,8 @@ const mapDispatchToProps = {
   delCol: tableDelCol,
   editName: tableEditName,
   orderRows: tablesOrderRows,
-  toggleFilters: tableToggleFilters
+  toggleFilters: tableToggleFilters,
+  collapse: tableCollapse,
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(VirtualizedTable);
