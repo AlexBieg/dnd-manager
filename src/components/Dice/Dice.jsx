@@ -102,7 +102,7 @@ const makeDie = (sides, sounds) => {
     const audio = sample(sounds)
 
     if (!audio.isPlaying) {
-      audio.setRefDistance(Math.abs(e.contact.getImpactVelocityAlongNormal()) * .02)
+      audio.setRefDistance(Math.abs(e.contact.getImpactVelocityAlongNormal()) * .04)
       audio.play();
     }
   })
