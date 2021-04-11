@@ -2,9 +2,28 @@ import React, { Component, createRef } from 'react';
 import * as THREE from 'three'
 import { connect } from 'react-redux';
 import CANNON from 'cannon';
+import { sample } from 'lodash'
 import { DiceD4, DiceD6, DiceD20, DiceD8, DiceD10, DiceD12, DiceManager } from './dice-models';
 import { getCurrentRoll, logRollAction, cancelRollAction } from 'reducers/rolls';
 import './Dice.scss';
+
+function promisifyLoader ( loader, onProgress ) {
+
+  function promiseLoader ( url ) {
+
+    return new Promise( ( resolve, reject ) => {
+
+      loader.load( url, resolve, onProgress, reject );
+
+    } );
+  }
+
+  return {
+    originalLoader: loader,
+    load: promiseLoader,
+  };
+
+}
 
 
 const getUpsideValue = (dice) => {
@@ -68,7 +87,7 @@ const randomVelocity = (max, min) => {
   return base;
 }
 
-const makeDie = (sides) => {
+const makeDie = (sides, sounds) => {
   const config = SIDE_TO_TYPE[sides]
   var dice = new config.type({backColor: config.backColor, fontColor: config.fontColor, size: 5, mass: 0.1 });
 
@@ -79,6 +98,14 @@ const makeDie = (sides) => {
   dice.getObject().quaternion.z = (Math.random()*90-45) * Math.PI / 180;
   dice.getObject().body.velocity.set(randomVelocity(50, 10), randomVelocity(50, 10), 2)
   dice.getObject().body.angularVelocity.set(randomVelocity(10, 5), randomVelocity(10, 5), randomVelocity(10, 5));
+  dice.getObject().body.addEventListener('collide', (e) => {
+    const audio = sample(sounds)
+
+    if (!audio.isPlaying) {
+      audio.setRefDistance(Math.abs(e.contact.getImpactVelocityAlongNormal()) * .02)
+      audio.play();
+    }
+  })
   dice.updateBodyFromMesh();
 
   return dice;
@@ -94,6 +121,54 @@ const makeWall = (pos, axis, angle) => {
   return wallBody;
 }
 
+
+function animate(scene, camera, currentRoll, world, dice, threshold, stableCount, renderer, normalSides, strangeSides, logRoll) {
+  world.step(1/60);
+
+  for (let i = 0; i < dice.length; i++) {
+    const die = dice[i]
+    die.updateMeshFromBody();
+
+    let angularVelocity = die.getObject().body.angularVelocity;
+    let velocity = die.getObject().body.velocity;
+
+    if (Math.abs(angularVelocity.x) < threshold && Math.abs(angularVelocity.y) < threshold && Math.abs(angularVelocity.z) < threshold &&
+    Math.abs(velocity.x) < threshold && Math.abs(velocity.y) < threshold && Math.abs(velocity.z) < threshold) {
+      stableCount[i]++
+    }
+  }
+
+  renderer.render( scene, camera );
+
+  if (stableCount.some(c => c < 10)) {
+    requestAnimationFrame(() => {
+      animate(scene, camera, currentRoll, world, dice, threshold, stableCount, renderer, normalSides, strangeSides, logRoll)
+    });
+  } else {
+    const results = []
+    let sum = currentRoll.shift;
+    for (let i = 0; i < dice.length; i++) {
+      const die = dice[i]
+      const val = getUpsideValue(die)
+      results.push([val, normalSides[i]])
+      sum += val;
+    }
+
+    for (const sides of strangeSides) {
+      const val = Math.floor(Math.random() * sides) + 1
+      results.push([val, sides])
+      sum += val
+    }
+
+    logRoll({
+      results,
+      sum,
+      shift: currentRoll.shift,
+      rollText: currentRoll.text,
+    })
+  }
+}
+
 class Dice extends Component {
   constructor(props) {
     super(props)
@@ -101,7 +176,7 @@ class Dice extends Component {
     this.mount = createRef()
   }
 
-  componentDidUpdate(prevProps) {
+  async componentDidUpdate(prevProps) {
     const { currentRoll, logRoll } = this.props;
 
     if (!currentRoll || currentRoll === prevProps.currentRoll) {
@@ -140,7 +215,20 @@ class Dice extends Component {
     pLight.position.set( 0, 10, 30 );
     scene.add( pLight );
 
+    const audioLoader = new THREE.AudioLoader();
+    const listener = new THREE.AudioListener();
+    listener.setMasterVolume(20)
+    camera.add(listener);
+
     DiceManager.setWorld(world);
+
+    this.mount.current.appendChild( renderer.domElement );
+
+    camera.position.z = 150;
+
+    const promiseAudioLoader = promisifyLoader(audioLoader)
+
+    const sounds = ['./collision1.wav', './collision2.wav', './collision3.wav']
 
     const dice = []
     const strangeSides = []
@@ -150,7 +238,19 @@ class Dice extends Component {
       const sides = currentRoll.dice[i]
       if (sides in SIDE_TO_TYPE) {
         normalSides.push(sides);
-        const die = makeDie(sides)
+
+        const audio = []
+
+        for (let sound of sounds) {
+          const buffer = await promiseAudioLoader.load(sound)
+
+          const posAudio = new THREE.PositionalAudio(listener);
+          posAudio.setBuffer(buffer);
+
+          audio.push(posAudio)
+        }
+
+        const die = makeDie(sides, audio)
         scene.add(die.getObject());
 
         dice.push(die);
@@ -160,63 +260,10 @@ class Dice extends Component {
 
     }
 
-    this.mount.current.appendChild( renderer.domElement );
-
-    camera.position.z = 150;
-
     let stableCount = dice.map(d => 0);
     const threshold = .1;
 
-    function animate() {
-      world.step(1/60);
-
-      for (let i = 0; i < dice.length; i++) {
-        const die = dice[i]
-        die.updateMeshFromBody();
-
-        let angularVelocity = die.getObject().body.angularVelocity;
-        let velocity = die.getObject().body.velocity;
-
-        if (Math.abs(angularVelocity.x) < threshold && Math.abs(angularVelocity.y) < threshold && Math.abs(angularVelocity.z) < threshold &&
-        Math.abs(velocity.x) < threshold && Math.abs(velocity.y) < threshold && Math.abs(velocity.z) < threshold) {
-          stableCount[i]++
-        }
-      }
-
-
-
-      renderer.render( scene, camera );
-
-      if (stableCount.some(c => c < 10)) {
-        requestAnimationFrame(animate);
-      } else {
-        const results = []
-        let sum = currentRoll.shift;
-        for (let i = 0; i < dice.length; i++) {
-          const die = dice[i]
-          const val = getUpsideValue(die)
-          console.log(die);
-          results.push([val, normalSides[i]])
-          sum += val;
-        }
-
-        for (const sides of strangeSides) {
-          const val = Math.floor(Math.random() * sides) + 1
-          results.push([val, sides])
-          sum += val
-        }
-
-        logRoll({
-          results,
-          sum,
-          shift: currentRoll.shift,
-          rollText: currentRoll.text,
-        })
-      }
-  }
-
-    animate();
-
+    animate(scene, camera, currentRoll, world, dice, threshold, stableCount, renderer, normalSides, strangeSides, logRoll);
   }
 
   render() {
