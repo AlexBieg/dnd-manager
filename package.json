@@ -30,7 +30,7 @@
     "slate": "^0.62.0",
     "slate-history": "^0.62.0",
     "slate-react": "^0.62.0",
-    "three": "^0.90.0",
+    "three": "^0.125.0",
     "uuid": "^8.1.0"
   },
   "scripts": {
