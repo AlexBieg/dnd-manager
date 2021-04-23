@@ -192,7 +192,11 @@ const DataCell = ({
   hasMenu=false,
   showDrag,
   columnName,
-  hasEditor=true
+  hasEditor=true,
+  onNext=() => {},
+  focusCell,
+  columnIndex,
+  onFocus,
 }) => {
   const [innerVal, setInnerVal] = useState(value);
   const dispatch = useDispatch();
@@ -223,6 +227,9 @@ const DataCell = ({
             value={innerVal}
             onChange={onChangeInner}
             onBlur={() => dispatch(tableEditRow(tableId, recordId, { [columnName]: innerVal }))}
+            onNext={onNext}
+            onFocus={onFocus}
+            focus={focusCell.colIndex === columnIndex && focusCell.rowIndex === recordIndex}
           />
         }
       </div>
@@ -230,7 +237,7 @@ const DataCell = ({
   );
 }
 
-const DataRow = SortableElement(({ table, record, recordIndex, id }) => (
+const DataRow = SortableElement(({ table, record, recordIndex, id, onSetFocusCell, onFocusCell, focusCell }) => (
   <tr className="loaded-row">
     <DataCell hasMenu showDrag hasEditor={false} tableId={id} recordId={record.__id}/>
     {
@@ -238,21 +245,33 @@ const DataRow = SortableElement(({ table, record, recordIndex, id }) => (
         <DataCell
           key={`${c.name}-${record.__id}`}
           columnName={table.columns[columnIndex].name}
+          columnIndex={columnIndex}
           tableId={id}
           recordId={record.__id}
           recordIndex={recordIndex}
-          value={record[table.columns[columnIndex].name]} />
+          value={record[table.columns[columnIndex].name]}
+          focusCell={focusCell}
+          onFocus={onFocusCell}
+          onNext={() => onSetFocusCell(columnIndex, recordIndex)} />
       ))
     }
   </tr>
 ));
 
-const DataGrid = SortableContainer(({ filteredRecords, limit, offset, table, id, rowHeights }) => (
+const DataGrid = SortableContainer(({ filteredRecords, limit, offset, table, id, rowHeights, onSetFocusCell, onFocusCell, focusCell }) => (
   <tbody>
     {
       filteredRecords.map((r, recordIndex) => (
         recordIndex >= offset && recordIndex <= (offset + limit) ?
-          <DataRow key={r.__id} index={recordIndex} table={table} record={r} id={id} recordIndex={recordIndex} /> :
+          <DataRow
+            key={r.__id}
+            index={recordIndex}
+            table={table} record={r}
+            id={id}
+            recordIndex={recordIndex}
+            focusCell={focusCell}
+            onFocusCell={onFocusCell}
+            onSetFocusCell={onSetFocusCell} /> :
           <tr key={r.__id} className="loading-row" style={{ height: rowHeights[recordIndex]}}><td>Loading...</td></tr>
       ))
     }
@@ -275,6 +294,7 @@ class VirtualizedTable extends React.Component {
       scrollTop: 0,
       aboveHeights: 0,
       filterable: false,
+      focusCell: { colIndex: -1, rowIndex: -1 },
     }
 
     this.lastScrollTop = 0;
@@ -431,9 +451,24 @@ class VirtualizedTable extends React.Component {
     this.lastScrollTop = tableRef.current.scrollTop;
   }
 
+  handleSetFocusCell = (colIndex, rowIndex) => {
+    this.onAddRow(rowIndex+1)();
+    setTimeout(() => {
+      this.setState({ focusCell: { colIndex, rowIndex: rowIndex+1 }})
+    }, 0);
+  }
+
+  handleFocusCell = () => {
+    const { focusCell } = this.state;
+
+    if (focusCell.colIndex >= 0 && focusCell.rowIndex >= 0) {
+      this.setState({ focusCell: { colIndex: -1, rowIndex: -1 }});
+    }
+  }
+
   render() {
     const { table, id, filterable, collapsed, collapse } = this.props;
-    const { filteredRecords, outerHeight, limit, offset, filters, tableRef, rowHeights } = this.state;
+    const { filteredRecords, outerHeight, limit, offset, filters, tableRef, rowHeights, focusCell } = this.state;
 
     if (!table) {
       return <div>The selected table does not exist</div>
@@ -478,7 +513,10 @@ class VirtualizedTable extends React.Component {
                 rowHeights={rowHeights}
                 table={table}
                 limit={limit}
-                offset={offset} />
+                offset={offset}
+                focusCell={focusCell}
+                onFocusCell={this.handleFocusCell}
+                onSetFocusCell={this.handleSetFocusCell} />
             </table>
           </div>
         }

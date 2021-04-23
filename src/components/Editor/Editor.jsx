@@ -340,7 +340,7 @@ class CustomEditor extends Component {
       });
     }
 
-    if (event.key === 'Enter' && event.shiftKey) {
+    if (event.key === 'Enter' && event.shiftKey && onNext) {
       event.preventDefault();
       onNext(event);
       return;
