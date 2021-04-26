@@ -190,14 +190,13 @@ const Page = ({ pageId }) => {
                       {...provided.draggableProps}
                       className="content-row"
                     >
-                      <Icon className="grip" icon="grip-lines" {...provided.dragHandleProps} />
                       <Popover
                         isOpen={menuOpen.includes(i)}
                         position={'bottom'}
                         content={<PopoverMenu options={getMenuOptions(i)} />}
                         onClickOutside={onCloseMenu(i)}
                       >
-                        <Icon className="menu" icon="ellipsis-v" onClick={onOpenMenu(i)}/>
+                        <Icon className="grip" icon="grip-vertical" {...provided.dragHandleProps} onClick={onOpenMenu(i)} />
                       </Popover>
                       {
                         c.content === 'select_table' &&

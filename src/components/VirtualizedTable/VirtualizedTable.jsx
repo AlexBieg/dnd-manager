@@ -3,6 +3,7 @@ import { connect, useDispatch, useSelector } from 'react-redux';
 import { arrayMove, SortableHandle } from 'react-sortable-hoc';
 import { debounce } from 'lodash';
 import {SortableContainer, SortableElement} from 'react-sortable-hoc';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
   getTableById,
   getRecordsByTableId,
@@ -153,16 +154,6 @@ const HeaderCell = SortableElement(({
 
 const HeaderRow = SortableContainer(({ tableId, table, filterable }) => (
   <tr>
-    <HeaderCell
-      index={-1}
-      key="test"
-      deleteable={false}
-      resizeable={false}
-      draggable={false}
-      hasText={false}
-      name=""
-      column={{}}
-    />
     {
       table.columns.map((c, columnIndex) => (
         <HeaderCell
@@ -180,17 +171,13 @@ const HeaderRow = SortableContainer(({ tableId, table, filterable }) => (
   </tr>
 ));
 
-const RowDragger = SortableHandle(() => (
-  <Icon className="grip-lines" icon="grip-lines" draggable />
-));
-
 const DataCell = ({
   value,
   tableId,
   recordId,
   recordIndex,
   hasMenu=false,
-  showDrag,
+  dragHandleProps,
   columnName,
   hasEditor=true,
   onNext=() => {},
@@ -211,15 +198,17 @@ const DataCell = ({
         className={"v-data-cell"}
         onDragOver={e => e.preventDefault()}
       >
-        { showDrag &&  <RowDragger />}
         {
           hasMenu &&
-            <Popover options={[
-              { text: 'Delete Row', icon: 'trash-alt', onClick: () => dispatch(tableDelRow(tableId, recordId)) },
-              { text: 'Add Row Above', icon: 'plus', onClick: () => dispatch(tableAddRow(tableId, recordIndex)) }
-            ]}>
-              <Icon className="menu" icon="ellipsis-v" />
-            </Popover>
+            <div className="v-data-cell-menu" onClick={() => console.log('onClick')}>
+              <Popover options={[
+                { text: 'Delete Row', icon: 'trash-alt', onClick: () => dispatch(tableDelRow(tableId, recordId)) },
+                { text: 'Add Row Above', icon: 'plus', onClick: () => dispatch(tableAddRow(tableId, recordIndex)) }
+              ]}>
+                <Icon className="grip-lines" icon="grip-vertical" draggable {...dragHandleProps} />
+              </Popover>
+            </div>
+
         }
         {
           hasEditor &&
@@ -237,46 +226,62 @@ const DataCell = ({
   );
 }
 
-const DataRow = SortableElement(({ table, record, recordIndex, id, onSetFocusCell, onFocusCell, focusCell }) => (
-  <tr className="loaded-row">
-    <DataCell hasMenu showDrag hasEditor={false} tableId={id} recordId={record.__id}/>
+const DataRow = ({ table, record, recordIndex, id, onSetFocusCell, onFocusCell, focusCell }) => (
+  <Draggable key={record.__id} draggableId={record.__id} index={recordIndex}>
     {
-      table.columns.map((c, columnIndex) => (
-        <DataCell
-          key={`${c.name}-${record.__id}`}
-          columnName={table.columns[columnIndex].name}
-          columnIndex={columnIndex}
-          tableId={id}
-          recordId={record.__id}
-          recordIndex={recordIndex}
-          value={record[table.columns[columnIndex].name]}
-          focusCell={focusCell}
-          onFocus={onFocusCell}
-          onNext={() => onSetFocusCell(columnIndex, recordIndex)} />
-      ))
+      (provided) => (
+        <tr ref={provided.innerRef} {...provided.draggableProps} className="loaded-row">
+          {
+            table.columns.map((c, columnIndex) => (
+              <DataCell
+                hasMenu={columnIndex === 0}
+                key={`${c.name}-${record.__id}`}
+                columnName={table.columns[columnIndex].name}
+                columnIndex={columnIndex}
+                tableId={id}
+                recordId={record.__id}
+                recordIndex={recordIndex}
+                value={record[table.columns[columnIndex].name]}
+                focusCell={focusCell}
+                onFocus={onFocusCell}
+                dragHandleProps={provided.dragHandleProps}
+                onNext={() => onSetFocusCell(columnIndex, recordIndex)} />
+            ))
+          }
+        </tr>
+      )
     }
-  </tr>
-));
+  </Draggable>
 
-const DataGrid = SortableContainer(({ filteredRecords, limit, offset, table, id, rowHeights, onSetFocusCell, onFocusCell, focusCell }) => (
-  <tbody>
+);
+
+const DataGrid = ({ filteredRecords, limit, offset, table, id, rowHeights, onSetFocusCell, onFocusCell, focusCell }) => (
+  <Droppable className="page-content" droppableId={`table-${id}`}>
     {
-      filteredRecords.map((r, recordIndex) => (
-        recordIndex >= offset && recordIndex <= (offset + limit) ?
-          <DataRow
-            key={r.__id}
-            index={recordIndex}
-            table={table} record={r}
-            id={id}
-            recordIndex={recordIndex}
-            focusCell={focusCell}
-            onFocusCell={onFocusCell}
-            onSetFocusCell={onSetFocusCell} /> :
-          <tr key={r.__id} className="loading-row" style={{ height: rowHeights[recordIndex]}}><td>Loading...</td></tr>
-      ))
+      (provided) => (
+        <tbody {...provided.droppableProps} ref={provided.innerRef}>
+          {
+            filteredRecords.map((r, recordIndex) => (
+              recordIndex >= offset && recordIndex <= (offset + limit) ?
+                <DataRow
+                  key={r.__id}
+                  index={recordIndex}
+                  table={table}
+                  record={r}
+                  id={id}
+                  recordIndex={recordIndex}
+                  focusCell={focusCell}
+                  onFocusCell={onFocusCell}
+                  onSetFocusCell={onSetFocusCell} /> :
+                <tr key={r.__id} className="loading-row" style={{ height: rowHeights[recordIndex]}}><td>Loading...</td></tr>
+            ))
+          }
+          {provided.placeholder}
+        </tbody>
+      )
     }
-</tbody>
-));
+  </Droppable>
+);
 
 class VirtualizedTable extends React.Component {
   constructor(props) {
@@ -308,8 +313,10 @@ class VirtualizedTable extends React.Component {
     }
   }
 
-  onRowReorder = ({ oldIndex, newIndex}) => {
+  onRowReorder = ({ source, destination }) => {
     const { table, orderRows, id } = this.props;
+    const oldIndex = source.index;
+    const newIndex = destination.index;
 
     if (oldIndex !== newIndex) {
       orderRows(id, arrayMove(table.rows, oldIndex, newIndex));
@@ -499,24 +506,27 @@ class VirtualizedTable extends React.Component {
                   filterable={filterable}
                 />
               </thead>
-              <DataGrid
-                lockAxis="y"
-                helperClass="dragging-row"
-                useDragHandle
-                id={id}
-                onSortEnd={this.onRowReorder}
-                getHelperDimensions={({ node }) => ({
-                  height: 40,
-                  width: node.offsetWidth,
-                })}
-                filteredRecords={filteredRecords}
-                rowHeights={rowHeights}
-                table={table}
-                limit={limit}
-                offset={offset}
-                focusCell={focusCell}
-                onFocusCell={this.handleFocusCell}
-                onSetFocusCell={this.handleSetFocusCell} />
+              <DragDropContext onDragEnd={this.onRowReorder}>
+                <DataGrid
+                  lockAxis="y"
+                  helperClass="dragging-row"
+                  useDragHandle
+                  id={id}
+                  onSortEnd={this.onRowReorder}
+                  getHelperDimensions={({ node }) => ({
+                    height: 40,
+                    width: node.offsetWidth,
+                  })}
+                  filteredRecords={filteredRecords}
+                  rowHeights={rowHeights}
+                  table={table}
+                  limit={limit}
+                  offset={offset}
+                  focusCell={focusCell}
+                  onFocusCell={this.handleFocusCell}
+                  onSetFocusCell={this.handleSetFocusCell} />
+              </DragDropContext>
+
             </table>
           </div>
         }

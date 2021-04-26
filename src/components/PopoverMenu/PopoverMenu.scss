@@ -1,7 +1,13 @@
+.react-tiny-popover-container {
+  z-index: 10;
+}
+
 .popover-menu {
   background: white;
   border-radius: 5px;
   color: #5d5d5d;
+
+  z-index: 10;
 
   .menu-item {
     padding: 10px;
