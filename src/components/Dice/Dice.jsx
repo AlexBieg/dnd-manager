@@ -27,7 +27,7 @@ function promisifyLoader ( loader, onProgress ) {
 
 
 const getUpsideValue = (dice) => {
-  let vector = new THREE.Vector3(0, 0, 1);
+  let vector = new THREE.Vector3(0, 0, dice.invertUpside ? -1 : 1);
   let closest_face;
   let closest_angle = Math.PI * 2;
   for (let i = 0; i < dice.getObject().geometry.faces.length; ++i) {
